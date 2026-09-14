@@ -635,7 +635,20 @@ function showBsod(c){ document.getElementById('bsodCause').textContent=c||'DO_NO
   let p=0; clearInterval(bsodTimer); bsodTimer=setInterval(function(){ p=Math.min(p+Math.random()*9,100); document.getElementById('bsodPct').textContent=Math.floor(p); if(p>=100)clearInterval(bsodTimer); },200);
   setTimeout(hideBsod,6000); }
 function hideBsod(){ document.getElementById('bsod').classList.remove('show'); clearInterval(bsodTimer); }
-function showShutdown(){ document.getElementById('shutdown').classList.add('show'); setTimeout(function(){ window.location.href='https://antivirusarc.meme'; },2400); }
+function showShutdown(isLogoff){
+  const sd = document.getElementById('shutdown');
+  const msg = document.getElementById('shutdownMsg');
+  const sub = document.getElementById('shutdownSub');
+  if(msg) msg.textContent = 'Cerrando sesión de ARCSYSTEMS...';
+  if(sub) sub.textContent = isLogoff ? 'Guardando sesión y configuración del sistema ☁️' : 'Apagando subsistemas y guardando memes ☁️';
+  if(sd) sd.classList.add('show');
+  try {
+    sfx(523, 0.18, 'sine', 0.15);
+    setTimeout(function(){ sfx(440, 0.22, 'sine', 0.15); }, 120);
+    setTimeout(function(){ sfx(349, 0.35, 'sine', 0.18); }, 240);
+  } catch(e){}
+  setTimeout(function(){ window.location.href='index.html'; }, 1800);
+}
 
 /* ============ MINESWEEPER ============ */
 let msBoard=[],msOpen=0,msFlags=0,msDead=false,msTimer=null,msSec=0,msStarted=false;

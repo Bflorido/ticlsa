@@ -91,12 +91,12 @@
     background:url('https://image.qwenlm.ai/public_source/3d979a43-82ee-4343-8b69-e361d504124c/1a2ff0b7b-b28f-4d4d-9986-4323eaa63215.png') center/cover no-repeat; }
   .desktop { position:fixed; inset:0 0 36px 0; z-index:5; }
   .dicons { position:absolute; inset:0; pointer-events:none; }
-  .dicon { position:absolute; width:86px; text-align:center; color:#fff; cursor:pointer; padding:6px 2px; border:1px dotted transparent; border-radius:3px; pointer-events:auto; user-select:none; }
+  .dicon { position:absolute; width:86px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center; color:#fff; cursor:pointer; padding:6px 2px; border:1px dotted transparent; border-radius:3px; pointer-events:auto; user-select:none; }
   .dicon:hover { background:rgba(11,97,217,.35); border-color:rgba(255,255,255,.5); }
   .dicon.selected { background:rgba(11,97,217,.55); border-color:rgba(255,255,255,.8); }
   .dicon.dragging { opacity:0.85; z-index:50; cursor:grabbing; background:rgba(11,97,217,.5); border-color:rgba(255,255,255,.8); }
-  .dicon .ico { font-size:36px; display:block; filter:drop-shadow(1px 2px 2px rgba(0,0,0,.6)); pointer-events:none; }
-  .dicon .lbl { font-size:11px; text-shadow:1px 1px 2px #000; margin-top:3px; line-height:1.2; pointer-events:none; }
+  .dicon .ico { font-size:36px; display:flex; align-items:center; justify-content:center; width:100%; height:42px; margin:0 auto; filter:drop-shadow(1px 2px 2px rgba(0,0,0,.6)); pointer-events:none; }
+  .dicon .lbl { font-size:11px; text-shadow:1px 1px 2px #000; margin-top:3px; line-height:1.2; text-align:center; width:100%; pointer-events:none; }
 
   .ctx-menu { position:fixed; z-index:3000; display:none; width:230px; background:#fff; border:1px solid #808080; box-shadow:3px 3px 8px rgba(0,0,0,.4); padding:2px; }
   .ctx-menu.show { display:block; }
@@ -940,6 +940,157 @@
     .nv-hero-tag { font-size:12px; letter-spacing:2px; }
     .nv-primary { font-size:22px; padding:12px; max-width:92vw; }
     .nv-glass { min-width:140px; font-size:16px; padding:10px 14px; }
+
+    /* ---- WINDOWS XP MY COMPUTER & CONTROL PANEL MOBILE OPTIMIZATIONS ---- */
+    .xp-explorer-body {
+      flex-direction:column !important;
+      height:auto !important;
+      min-height:0 !important;
+      overflow-y:auto !important;
+      -webkit-overflow-scrolling:touch;
+    }
+    .xp-menubar {
+      overflow-x:auto !important;
+      white-space:nowrap !important;
+      -webkit-overflow-scrolling:touch;
+      padding:4px 8px !important;
+      font-size:11px !important;
+    }
+    .xp-toolbar {
+      overflow-x:auto !important;
+      white-space:nowrap !important;
+      -webkit-overflow-scrolling:touch;
+      padding:4px 6px !important;
+      gap:4px !important;
+    }
+    .xp-tool-btn {
+      padding:4px 8px !important;
+      font-size:11px !important;
+      background:rgba(0,0,0,0.04);
+      border-radius:4px;
+    }
+    .xp-addressbar {
+      padding:4px 8px !important;
+    }
+    .xp-addr-box {
+      font-size:11px !important;
+      padding:3px 6px !important;
+    }
+    .xp-main-pane {
+      order:1 !important;
+      width:100% !important;
+      padding:12px 10px 16px !important;
+      overflow-y:visible !important;
+      flex:none !important;
+    }
+    .xp-task-pane {
+      order:2 !important;
+      width:100% !important;
+      min-width:100% !important;
+      padding:10px !important;
+      background:linear-gradient(180deg,#5575a5 0%,#3d5a86 100%) !important;
+      border-top:2px solid #215dc6;
+      overflow-y:visible !important;
+      flex:none !important;
+      box-sizing:border-box;
+    }
+    .xp-task-card {
+      margin-bottom:8px !important;
+      border-radius:6px !important;
+    }
+    .xp-task-head {
+      font-size:12px !important;
+      padding:6px 10px !important;
+    }
+    .xp-task-list {
+      padding:8px 10px !important;
+      gap:6px !important;
+    }
+    .xp-task-link {
+      font-size:12px !important;
+      padding:4px 0 !important;
+    }
+    .cp-cat-header {
+      font-size:15px !important;
+      margin-bottom:10px !important;
+    }
+    .cp-grid {
+      grid-template-columns:1fr !important;
+      gap:8px !important;
+    }
+    .cp-card {
+      padding:10px 12px !important;
+      background:#f8fafc !important;
+      border:1px solid #cbd5e1 !important;
+      border-radius:8px !important;
+      box-shadow:0 1px 3px rgba(0,0,0,0.05) !important;
+      margin-bottom:2px !important;
+    }
+    .cp-card:active {
+      background:#dbeafe !important;
+      border-color:#3b82f6 !important;
+      transform:scale(0.98);
+    }
+    .cp-card .cp-ico {
+      font-size:32px !important;
+      min-width:40px !important;
+    }
+    .cp-card .cp-name {
+      font-size:13px !important;
+      color:#003399 !important;
+      margin-bottom:2px !important;
+    }
+    .cp-card .cp-desc {
+      font-size:11px !important;
+      color:#475569 !important;
+      line-height:1.35 !important;
+    }
+    .xp-drives-grid {
+      grid-template-columns:1fr !important;
+      gap:8px !important;
+    }
+    .xp-drive-tile {
+      padding:10px 12px !important;
+      background:#f8fafc !important;
+      border:1px solid #cbd5e1 !important;
+      border-radius:8px !important;
+      box-shadow:0 1px 3px rgba(0,0,0,0.05) !important;
+    }
+    .xp-drive-tile:active {
+      background:#dbeafe !important;
+      border-color:#3b82f6 !important;
+      transform:scale(0.98);
+    }
+    .xp-drive-tile .d-ico {
+      font-size:32px !important;
+    }
+    .xp-drive-title {
+      font-size:13px !important;
+    }
+    .xp-drive-sub {
+      font-size:11px !important;
+      color:#64748b !important;
+    }
+    .xp-disk-bar {
+      height:10px !important;
+      border-radius:5px !important;
+      margin-top:4px !important;
+    }
+    .sys-hero {
+      flex-direction:column !important;
+      align-items:center !important;
+      text-align:center !important;
+      gap:10px !important;
+    }
+    .sys-specs-grid {
+      flex-direction:column !important;
+      align-items:center !important;
+      text-align:center !important;
+      gap:8px !important;
+    }
+    .sys-pc-icon {
+      margin-bottom:4px !important;
+    }
   }
 
   /* Extra small phones (<= 420px) */
@@ -1023,10 +1174,12 @@
   .sys-dlg-btns button { min-width:72px; padding:3px 12px; font-size:11px; }
 
   /* VACANO SHIP ICON BADGE (High-Tech Retro Cyberpunk Starfighter) */
-  .ship-vacano-wrap { position:relative; width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; filter:drop-shadow(0 2px 8px rgba(0,212,255,0.7)); transition:transform .15s ease-out; }
-  .dicon-ships:hover .ship-vacano-wrap, .ships-game-tile:hover .ship-vacano-wrap { transform:scale(1.12) translateY(-2px); filter:drop-shadow(0 0 14px #00d4ff) drop-shadow(0 0 24px #ff00ff); }
-  .vacano-ship-svg { overflow:visible; display:block; }
-  .ships-game-tile { position:relative; overflow:hidden; }
-  .ships-game-tile::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(0,212,255,.15) 0%,transparent 60%); pointer-events:none; }
-  .mt-badge.featured { background:linear-gradient(90deg,#ff0055,#a855f7); color:#fff; font-weight:bold; box-shadow:0 0 8px rgba(255,0,85,.6); animation:featPulse .8s infinite alternate; }
-  @keyframes featPulse { from { filter:brightness(1); } to { filter:brightness(1.4); } }
+  .ship-vacano-wrap { position:relative; width:40px; height:40px; display:flex; align-items:center; justify-content:center; margin:0 auto; filter:drop-shadow(0 2px 6px rgba(0,212,255,0.7)); transition:transform .15s ease-out; }
+  .dicon:hover .ship-vacano-wrap, .meme-tile:hover .ship-vacano-wrap { transform:scale(1.10) translateY(-2px); filter:drop-shadow(0 0 10px #00d4ff); }
+  .vacano-ship-svg { overflow:visible; display:block; margin:0 auto; }
+  .dicon.dicon-ships { display:flex !important; flex-direction:column !important; align-items:center !important; justify-content:flex-start !important; text-align:center !important; }
+  .dicon.dicon-ships .ico { display:flex !important; align-items:center !important; justify-content:center !important; width:100% !important; margin:0 auto !important; text-align:center !important; }
+  .dicon.dicon-ships .ship-vacano-wrap { margin:0 auto !important; display:flex !important; align-items:center !important; justify-content:center !important; }
+  .dicon.dicon-ships .vacano-ship-svg { display:block !important; margin:0 auto !important; }
+  .dicon.dicon-ships .lbl { width:100% !important; text-align:center !important; }
+
