@@ -3772,93 +3772,57 @@ function filterArcCmd(q){
   });
 }
 
-// Touch Desktop Single-Tap Handler (CSP-safe, no eval/Function)
-function executeDiconAction(icon, ev){
-  const now = Date.now();
-  if(icon._lastTap && (now - icon._lastTap < 350)) return;
-  icon._lastTap = now;
+/* ============ UNIFIED DESKTOP & MOBILE APP LAUNCHER ============ */
+function launchApp(action){
+  try{ sfx(700, 0.05, 'triangle', 0.06); }catch(e){}
+  if(action === 'computer') spawnToast('💻 My Computer: 500M tokens stored in C:\\ARC');
+  else if(action === 'virus') openWindow('win-main');
+  else if(action === 'ships') openNaves();
+  else if(action === 'browser') openWindow('win-browser');
+  else if(action === 'memes') openWindow('win-memes');
+  else if(action === 'games') openWindow('win-games');
+  else if(action === 'note') openWindow('win-note');
+  else if(action === 'recycle') spawnPopup();
+  else if(action === 'bsod') showBsod('DO_NOT_TOUCH.exe');
+  else if(action === 'config') openWindow('win-config');
+}
+
+let _lastIconClick = 0, _lastIconTarget = null;
+function handleDiconClick(el, action, ev){
+  if(ev){
+    ev.stopPropagation();
+  }
+  const isTouchDevice = (window.innerWidth <= 1024) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
   // Visual tap feedback
-  icon.classList.add('active');
-  setTimeout(function(){ icon.classList.remove('active'); }, 180);
+  document.querySelectorAll('.dicon').forEach(function(d){ d.classList.remove('selected', 'active'); });
+  el.classList.add('active');
+  setTimeout(function(){ el.classList.remove('active'); }, 200);
 
-  // 1. Direct function call if browser has compiled ondblclick
-  if(typeof icon.ondblclick === 'function'){
-    try {
-      icon.ondblclick.call(icon, ev || new MouseEvent('dblclick'));
-      return;
-    } catch(err){}
+  // On mobile / touch screen: single tap opens the app directly without delay!
+  if(isTouchDevice){
+    launchApp(action);
+    return;
   }
 
-  // 2. Dispatch genuine dblclick event
-  try {
-    icon.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true, view: window }));
-  } catch(e){}
-
-  // 3. Fallback action router (guaranteed CSP-safe execution)
-  const act = icon.getAttribute('ondblclick') || '';
-  if(act.includes('openNaves')){
-    if(typeof openNaves === 'function') openNaves();
-    return;
-  }
-  if(act.includes('spawnPopup')){
-    if(typeof spawnPopup === 'function') spawnPopup();
-    return;
-  }
-  const winMatch = act.match(/openWindow\(['"]([^'"]+)['"]\)/);
-  if(winMatch && typeof openWindow === 'function'){
-    openWindow(winMatch[1]);
-    return;
-  }
-  const bsodMatch = act.match(/showBsod\(['"]([^'"]+)['"]\)/);
-  if(bsodMatch && typeof showBsod === 'function'){
-    showBsod(bsodMatch[1]);
-    return;
-  }
-  const toastMatch = act.match(/spawnToast\(['"]([^'"]+)['"]\)/);
-  if(toastMatch && typeof spawnToast === 'function'){
-    spawnToast(toastMatch[1]);
-    return;
+  // On desktop: single click selects, double click opens
+  const now = Date.now();
+  if(_lastIconTarget === el && (now - _lastIconClick < 450)){
+    _lastIconClick = 0;
+    _lastIconTarget = null;
+    launchApp(action);
+  } else {
+    _lastIconClick = now;
+    _lastIconTarget = el;
+    el.classList.add('selected');
   }
 }
 
-function initMobileTouchIcons(){
-  const isTouchOrMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 1024 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-  document.querySelectorAll('.dicon').forEach(function(icon){
-    let touchStartX = 0, touchStartY = 0, touchTime = 0, hasMoved = false;
-
-    icon.addEventListener('touchstart', function(e){
-      if(e.touches.length === 1){
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        touchTime = Date.now();
-        hasMoved = false;
-      }
-    }, {passive:true});
-
-    icon.addEventListener('touchmove', function(e){
-      if(e.touches.length === 1){
-        const dx = Math.abs(e.touches[0].clientX - touchStartX);
-        const dy = Math.abs(e.touches[0].clientY - touchStartY);
-        if(dx > 12 || dy > 12) hasMoved = true;
-      }
-    }, {passive:true});
-
-    icon.addEventListener('touchend', function(e){
-      const elapsed = Date.now() - touchTime;
-      if(!hasMoved && elapsed < 450 && e.changedTouches && e.changedTouches.length === 1){
-        e.preventDefault();
-        executeDiconAction(icon, e);
-      }
-    });
-
-    icon.addEventListener('click', function(e){
-      if(isTouchOrMobile){
-        executeDiconAction(icon, e);
-      }
-    });
-  });
-}
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.dicon')){
+    document.querySelectorAll('.dicon.selected').forEach(function(d){ d.classList.remove('selected'); });
+  }
+});
 
 window.addEventListener('keydown', function(e){
   if((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')){
@@ -3874,7 +3838,6 @@ window.addEventListener('keydown', function(e){
 // Initialize browser
 renderTabs();
 renderHomePage();
-initMobileTouchIcons();
 
 /* ============ POWER-UPS & CRYPTO ABILITIES ============ */
 function powerUpColor(t){

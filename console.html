@@ -34,15 +34,15 @@
 
 <div class="desktop">
   <div class="dicons">
-    <div class="dicon" ondblclick="spawnToast(' My Computer: 500M tokens stored in C:\\ARC')"><span class="ico">💻</span><span class="lbl">My Computer</span></div>
-    <div class="dicon" ondblclick="openWindow('win-main')"><span class="ico">🛡️</span><span class="lbl">VirusARC.exe</span></div>
-    <div class="dicon" ondblclick="openNaves()"><span class="ico">🚀</span><span class="lbl">ships.exe</span></div>
-    <div class="dicon" ondblclick="openWindow('win-browser')"><span class="ico">🌐</span><span class="lbl">ARC Browser</span></div>
-    <div class="dicon" ondblclick="openWindow('win-memes')"><span class="ico">📁</span><span class="lbl">Memes</span></div>
-    <div class="dicon" ondblclick="openWindow('win-games')"><span class="ico">🎮</span><span class="lbl">Games</span></div>
-    <div class="dicon" ondblclick="openWindow('win-note')"><span class="ico">📄</span><span class="lbl">README.txt</span></div>
-    <div class="dicon" ondblclick="spawnPopup()"><span class="ico">🗑️</span><span class="lbl">Recycle Bin</span></div>
-    <div class="dicon" ondblclick="showBsod('DO_NOT_TOUCH.exe')"><span class="ico">☣️</span><span class="lbl">DO_NOT_TOUCH.exe</span></div>
+    <div class="dicon" onclick="handleDiconClick(this,'computer',event)" ondblclick="launchApp('computer')"><span class="ico">💻</span><span class="lbl">My Computer</span></div>
+    <div class="dicon" onclick="handleDiconClick(this,'virus',event)" ondblclick="launchApp('virus')"><span class="ico">🛡️</span><span class="lbl">VirusARC.exe</span></div>
+    <div class="dicon" onclick="handleDiconClick(this,'ships',event)" ondblclick="launchApp('ships')"><span class="ico">🚀</span><span class="lbl">ships.exe</span></div>
+    <div class="dicon" onclick="handleDiconClick(this,'browser',event)" ondblclick="launchApp('browser')"><span class="ico">🌐</span><span class="lbl">ARC Browser</span></div>
+    <div class="dicon" onclick="handleDiconClick(this,'memes',event)" ondblclick="launchApp('memes')"><span class="ico">📁</span><span class="lbl">My Memes</span></div>
+    <div class="dicon" onclick="handleDiconClick(this,'games',event)" ondblclick="launchApp('games')"><span class="ico">🎮</span><span class="lbl">Games</span></div>
+    <div class="dicon" onclick="handleDiconClick(this,'note',event)" ondblclick="launchApp('note')"><span class="ico">📄</span><span class="lbl">README.txt</span></div>
+    <div class="dicon" onclick="handleDiconClick(this,'recycle',event)" ondblclick="launchApp('recycle')"><span class="ico">🗑️</span><span class="lbl">Recycle Bin</span></div>
+    <div class="dicon" onclick="handleDiconClick(this,'bsod',event)" ondblclick="launchApp('bsod')"><span class="ico">☣️</span><span class="lbl">DO_NOT_TOUCH.exe</span></div>
   </div>
 
   <div class="window" id="win-main" style="left:130px; top:40px; width:560px;">
