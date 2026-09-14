@@ -6917,52 +6917,8 @@ function initSecurityShield(){
     }
   }, 400);
 
-  // 4. DevTools Detection and Security Lockout (Desktop only - completely bypassed on mobile/touch devices)
-  const isMobileClient = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                         (window.matchMedia && window.matchMedia('(max-width: 820px)').matches) ||
-                         ('ontouchstart' in window) ||
-                         (navigator.maxTouchPoints > 0);
-  if(isMobileClient) return;
-
-  let devtoolsDetected = false;
-  // Threshold raised to 220px: MetaMask popup typically causes 170-190px diff;
-  // real DevTools panel causes 300-400px. Higher threshold avoids false positives.
-  const threshold = 220;
-  let dtConfirmCount = 0;     // consecutive positive checks needed before lockdown
-  const DT_CONFIRM_NEEDED = 3; // ~3 seconds of sustained diff required
-
-  // Reset confirmation counter whenever the user returns to the tab/window
-  // (MetaMask opens and gives focus back quickly; DevTools stays open persistently)
-  function _resetDtCounter(){
-    if(!devtoolsDetected) dtConfirmCount = 0;
-  }
-  window.addEventListener('focus', _resetDtCounter);
-  document.addEventListener('visibilitychange', function(){
-    if(!document.hidden) _resetDtCounter();
-  });
-
-  setInterval(function(){
-    if(devtoolsDetected) return; // already locked — no need to keep checking
-    // Do not count while the tab is hidden (extension popups can hide the doc briefly)
-    if(document.hidden){ dtConfirmCount = 0; return; }
-
-    const widthDiff  = window.outerWidth  - window.innerWidth  > threshold;
-    const heightDiff = window.outerHeight - window.innerHeight > threshold;
-
-    if(widthDiff || heightDiff){
-      dtConfirmCount++;
-      if(dtConfirmCount >= DT_CONFIRM_NEEDED){
-        devtoolsDetected = true;
-        const lockout = document.createElement('div');
-        lockout.id = 'secLockout';
-        lockout.style.cssText = 'position:fixed;inset:0;background:rgba(10,0,0,0.96);color:#ff003c;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;text-align:center;padding:20px;';
-        lockout.innerHTML = '<div style="font-size:60px;margin-bottom:14px;filter:drop-shadow(0 0 20px #ff003c);">🛡️</div><h2 style="font-size:28px;letter-spacing:3px;margin-bottom:12px;color:#ff003c;text-shadow:0 0 10px #ff003c;">ARCSYSTEMS SECURITY LOCKDOWN</h2><p style="font-size:15px;color:#cfe8ff;max-width:540px;line-height:1.6;">Developer inspection environment detected. Client memory manipulation, console modifications, and script injections are cryptographically blocked.</p><button onclick="location.reload()" style="margin-top:24px;padding:12px 28px;background:linear-gradient(180deg,#ff003c,#b91c1c);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold;font-size:15px;box-shadow:0 0 20px rgba(255,0,60,.5);">RELOAD SYSTEM</button>';
-        document.body.appendChild(lockout);
-      }
-    } else {
-      // Diff gone (e.g. user closed MetaMask before 3s) → reset counter
-      dtConfirmCount = 0;
-    }
-  }, 1000);
+  // 4. Security: dimension-based DevTools detection removed — caused false positives
+  //    with MetaMask and other browser extension popups. Score integrity is protected
+  //    by the cryptographic heartbeat (section 3) above.
 }
 initSecurityShield();
