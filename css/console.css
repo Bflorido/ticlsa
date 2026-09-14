@@ -182,8 +182,10 @@
   .start-btn { display:flex; align-items:center; gap:7px; height:30px;
     background:linear-gradient(180deg,#7eda78 0%,#3c9838 12%,#2f8d2f 55%,#1e6b1e 100%);
     border:1px solid #1e6b1e; border-radius:0 10px 10px 0; color:#fff; font-style:italic; font-weight:bold; font-size:15px;
-    padding:0 16px 0 10px; cursor:pointer; box-shadow:0 0 6px rgba(0,0,0,.4), inset 0 1px 1px rgba(255,255,255,.5); text-shadow:1px 1px 1px #050; }
-  .start-btn.on { filter:brightness(.85); box-shadow:inset 1px 1px 3px rgba(0,0,0,.5); }
+    padding:0 16px 0 10px; cursor:pointer; box-shadow:0 0 6px rgba(0,0,0,.4), inset 0 1px 1px rgba(255,255,255,.5); text-shadow:1px 1px 1px #050;
+    transition: transform .12s, box-shadow .2s; }
+  .start-btn:hover { box-shadow:0 0 10px rgba(0,255,65,.6), inset 0 1px 2px rgba(255,255,255,.8); }
+  .start-btn.on { filter:brightness(.9); transform:scale(0.96); box-shadow:inset 1px 2px 4px rgba(0,0,0,.6), 0 0 12px rgba(0,212,255,.7); }
   .start-flag { display:grid; grid-template-columns:8px 8px; grid-template-rows:8px 8px; gap:1px; }
   .start-flag i { border-radius:1px; }
   .start-flag i:nth-child(1){background:#f65314;} .start-flag i:nth-child(2){background:#7cbb00;}
@@ -232,6 +234,7 @@
   .sm-right .sm-sep { background:#3f8cf3; }
   .sm-bottom { background:linear-gradient(180deg,#3f8cf3,#245edb); padding:7px 10px; display:flex; justify-content:flex-end; gap:8px; }
 
+  .memes-banner { background:#e0f2fe; border:1px solid #7dd3fc; border-radius:6px; padding:8px 12px; margin-bottom:12px; font-size:12px; color:#0369a1; line-height:1.4; }
   .memes-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #8a867a; }
   .memes-head h2 { font-size:14px; color:#003399; font-weight:bold; }
   .memes-head span { font-size:11px; color:#555; }
@@ -245,7 +248,19 @@
   .mt-badge.soon { background:#fef3c7; color:#b45309; border:1px solid #fcd34d; }
   .mt-badge.x { background:#e7f9fe; color:#0c4a6e; border:1px solid #38bdf8; }
   .mt-badge.play { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
+  .mt-badge.perk { background:#ecfdf5; color:#047857; border:1px solid #10b981; font-weight:bold; font-size:9px; display:block; margin:6px 0 4px; text-shadow:none; }
   .meme-tile.soonTile { background:linear-gradient(180deg,#fffbeb,#fff); border-style:dashed; border-color:#fcd34d; }
+
+  /* CRT Scanlines Overlay */
+  body.crt-mode::after {
+    content:'';
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:99999;
+    background:linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.03));
+    background-size:100% 3px, 6px 100%;
+  }
 
   .notepad { background:#fff; color:#000; padding:8px; height:100%; min-height:230px; overflow:auto; font-family:'VT323',monospace; font-size:17px; white-space:pre-wrap; }
   .np-menu { background:#ECE9D8; border-bottom:1px solid #919b9c; padding:3px 8px; font-size:11px; color:#000; display:flex; gap:14px; }
@@ -673,7 +688,7 @@
       touch-action:manipulation;
       border:1px solid rgba(255,255,255,0.08);
     }
-    .dicon:active {
+    .dicon:active, .dicon.active {
       background:rgba(0,212,255,0.38);
       border-color:rgba(0,212,255,0.5);
       transform:scale(.93);

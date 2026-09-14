@@ -262,6 +262,37 @@ function buildConfig(){
 }
 buildConfig();
 
+/* ============ CONTROL PANEL TOOLS ============ */
+function toggleCrtMode(){
+  document.body.classList.toggle('crt-mode');
+  const on = document.body.classList.contains('crt-mode');
+  const btn = document.getElementById('crtBtn');
+  if(btn) btn.textContent = on ? '📺 CRT Scanlines: ON' : '📺 CRT Scanlines: OFF';
+  spawnToast(on ? '📺 CRT Monitor Scanlines: ACTIVATED' : '📺 CRT Scanlines: DEACTIVATED');
+  try{ sfx(on?880:440, 0.06, 'sawtooth', 0.08); }catch(e){}
+}
+function toggleLowPowerMode(){
+  window._lowPowerMode = !window._lowPowerMode;
+  const btn = document.getElementById('turboBtn');
+  if(btn) btn.textContent = window._lowPowerMode ? '⚡ Turbo 60 FPS: ON' : '⚡ Turbo 60 FPS Mode';
+  spawnToast(window._lowPowerMode ? '⚡ Turbo 60 FPS Mode: ON (Background particles paused)' : '⚡ Standard visual mode restored');
+  try{ sfx(660, 0.08, 'sine', 0.08); }catch(e){}
+}
+function clearSystemCache(){
+  clearAllPopups();
+  spawnToast('✨ Popups, temporary data & DOM cache cleared!');
+  try{ sfx(1100, 0.06, 'sine', 0.09); }catch(e){}
+}
+function resetFlightRecords(){
+  if(confirm('⚠️ Are you sure you want to reset all local ships.exe flight records and pilot stats?')){
+    localStorage.removeItem('arc_record_score');
+    localStorage.removeItem('arc_last_pilot');
+    if(typeof updatePilotPlate === 'function') updatePilotPlate();
+    spawnToast('🔄 Flight records successfully reset to 0.');
+    try{ sfx(300, 0.15, 'sawtooth', 0.1); }catch(e){}
+  }
+}
+
 /* ============ CONTEXT MENU ============ */
 const ctxMenu=document.getElementById('ctxMenu');
 document.addEventListener('contextmenu',function(e){
@@ -332,8 +363,17 @@ document.addEventListener('mousedown',function(e){
   }
   else if(!e.target.closest('.start-menu')&&!e.target.closest('#startBtn')){ document.getElementById('startMenu').classList.remove('open'); document.getElementById('startBtn').classList.remove('on'); }
   const w=e.target.closest('.window'); if(w)focusWin(w); });
-function toggleStart(ev){ if(ev)ev.stopPropagation(); const m=document.getElementById('startMenu'); m.classList.toggle('open');
-  document.getElementById('startBtn').classList.toggle('on',m.classList.contains('open')); }
+function toggleStart(ev){
+  if(ev) ev.stopPropagation();
+  const m = document.getElementById('startMenu');
+  const wasOpen = m.classList.contains('open');
+  m.classList.toggle('open');
+  const isOpen = m.classList.contains('open');
+  document.getElementById('startBtn').classList.toggle('on', isOpen);
+  if(isOpen && !wasOpen){
+    try{ sfx(580, 0.05, 'triangle', 0.08); }catch(e){}
+  }
+}
 setInterval(function(){
   const now=new Date();
   const el=document.getElementById('clock');
@@ -501,7 +541,18 @@ setInterval(function(){
   if(popupsSuppressed() || adOn) return; // don't compete with browser/game/ad
   if(Math.random()<.5) spawnToast(AMBIENT_MSGS[Math.floor(Math.random()*AMBIENT_MSGS.length)]);
 }, 42000);
-function openMeme(name, url){ try{ sfx(880,.1,'square',.1); }catch(e){} if(url) window.open(url,'_blank'); }
+function openMeme(name, url){
+  try{
+    if(name==='Pingu'){ sfx(950,.08,'sawtooth',.12); setTimeout(function(){ sfx(1200,.12,'sawtooth',.15); },90); spawnToast('🐧 Pingu: NOOT NOOT! Piper Symphony perk ready in ships.exe.'); }
+    else if(name==='Pug Galaxys'){ sfx(320,.1,'sine',.15); setTimeout(function(){ sfx(480,.15,'sine',.18); },70); spawnToast('🐶 Pug: Space bark! +1 Extra starting life in ships.exe.'); }
+    else if(name==='Shitcoin Lovers'){ sfx(650,.06,'sine',.1); setTimeout(function(){ sfx(880,.1,'sine',.12); },60); spawnToast('💩 Shitcoin: 2x Drop Rate Boost active in ships.exe!'); }
+    else if(name==='Tick Cult'){ sfx(1400,.03,'square',.1); setTimeout(function(){ sfx(1600,.04,'square',.1); },50); spawnToast('🛡️ Tick Cult: Verified! Plasma shield active on sector start.'); }
+    else if(name==='WHATIF'){ sfx(440,.2,'triangle',.12); setTimeout(function(){ sfx(550,.2,'sine',.15); },100); spawnToast('🤔 WHATIF: +1 Bomb & 25% faster cooldowns active!'); }
+    else if(name==='POME On Arc'){ sfx(720,.1,'sine',.12); setTimeout(function(){ sfx(540,.15,'sine',.14); },70); spawnToast('🧾 POME: Proof of Meme! -15% enemy bullet speed.'); }
+    else { sfx(880,.1,'square',.1); }
+  }catch(e){}
+  if(url) window.open(url,'_blank');
+}
 function soonClick(name){ const t=document.createElement('div'); t.className='popup'; t.style.width='340px'; t.style.zIndex=560;
   t.style.left=(innerWidth/2-170)+'px'; t.style.top=(innerHeight/2-120)+'px';
   t.innerHTML='<div class="title-bar purple"><span>🚧 '+name+'</span><div class="tb-btns"><button class="close" onclick="this.closest(\'.popup\').remove()">✕</button></div></div>'+
@@ -3721,7 +3772,56 @@ function filterArcCmd(q){
   });
 }
 
-// Touch Desktop Single-Tap Handler
+// Touch Desktop Single-Tap Handler (CSP-safe, no eval/Function)
+function executeDiconAction(icon, ev){
+  const now = Date.now();
+  if(icon._lastTap && (now - icon._lastTap < 350)) return;
+  icon._lastTap = now;
+
+  // Visual tap feedback
+  icon.classList.add('active');
+  setTimeout(function(){ icon.classList.remove('active'); }, 180);
+
+  // 1. Direct function call if browser has compiled ondblclick
+  if(typeof icon.ondblclick === 'function'){
+    try {
+      icon.ondblclick.call(icon, ev || new MouseEvent('dblclick'));
+      return;
+    } catch(err){}
+  }
+
+  // 2. Dispatch genuine dblclick event
+  try {
+    icon.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true, view: window }));
+  } catch(e){}
+
+  // 3. Fallback action router (guaranteed CSP-safe execution)
+  const act = icon.getAttribute('ondblclick') || '';
+  if(act.includes('openNaves')){
+    if(typeof openNaves === 'function') openNaves();
+    return;
+  }
+  if(act.includes('spawnPopup')){
+    if(typeof spawnPopup === 'function') spawnPopup();
+    return;
+  }
+  const winMatch = act.match(/openWindow\(['"]([^'"]+)['"]\)/);
+  if(winMatch && typeof openWindow === 'function'){
+    openWindow(winMatch[1]);
+    return;
+  }
+  const bsodMatch = act.match(/showBsod\(['"]([^'"]+)['"]\)/);
+  if(bsodMatch && typeof showBsod === 'function'){
+    showBsod(bsodMatch[1]);
+    return;
+  }
+  const toastMatch = act.match(/spawnToast\(['"]([^'"]+)['"]\)/);
+  if(toastMatch && typeof spawnToast === 'function'){
+    spawnToast(toastMatch[1]);
+    return;
+  }
+}
+
 function initMobileTouchIcons(){
   const isTouchOrMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 1024 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   document.querySelectorAll('.dicon').forEach(function(icon){
@@ -3740,7 +3840,7 @@ function initMobileTouchIcons(){
       if(e.touches.length === 1){
         const dx = Math.abs(e.touches[0].clientX - touchStartX);
         const dy = Math.abs(e.touches[0].clientY - touchStartY);
-        if(dx > 14 || dy > 14) hasMoved = true;
+        if(dx > 12 || dy > 12) hasMoved = true;
       }
     }, {passive:true});
 
@@ -3748,19 +3848,13 @@ function initMobileTouchIcons(){
       const elapsed = Date.now() - touchTime;
       if(!hasMoved && elapsed < 450 && e.changedTouches && e.changedTouches.length === 1){
         e.preventDefault();
-        const dbl = icon.getAttribute('ondblclick');
-        if(dbl){
-          try { new Function(dbl)(); } catch(err){}
-        }
+        executeDiconAction(icon, e);
       }
     });
 
     icon.addEventListener('click', function(e){
       if(isTouchOrMobile){
-        const dbl = icon.getAttribute('ondblclick');
-        if(dbl){
-          try { new Function(dbl)(); } catch(err){}
-        }
+        executeDiconAction(icon, e);
       }
     });
   });
@@ -3907,7 +4001,7 @@ function nvLoop(timestamp){
     for(let i=0;i<Math.ceil(W/512)+1;i++) nvCtx.drawImage(NV.neb, -(NV.nebX%512)+i*512, 0, 512, H);
     nvCtx.globalAlpha=1;
   }
-  if(!NV.hideBgFx){
+  if(!NV.hideBgFx && !window._lowPowerMode){
     nvCtx.font='13px VT323'; nvCtx.fillStyle='rgba(0,255,120,.10)';
     NV.bin.forEach(function(b){ b.y+=b.s; if(b.y>H){ b.y=-20; b.x=Math.random()*W; }
       if(Math.random()<.06) b.txt=String(Math.round(Math.random()));

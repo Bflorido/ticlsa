@@ -151,45 +151,94 @@ C:\ARC> Desktop icons repaired ✓
     </div>
   </div>
 
-  <div class="window" id="win-config" style="left:380px; top:90px; width:520px;">
-    <div class="title-bar purple"><span>🎛️ Settings — Customize ARCSYSTEMS XP</span>
+  <div class="window" id="win-config" style="left:380px; top:90px; width:540px;">
+    <div class="title-bar purple"><span>🎛️ Control Panel — ARCSYSTEMS XP</span>
       <div class="tb-btns"><button onclick="minimize('win-config')">_</button><button onclick="maxWin('win-config')">□</button><button class="close" onclick="closeWindow('win-config')">✕</button></div></div>
     <div class="window-body">
       <div class="cfg-section">
-        <div class="cfg-title">️ Desktop Wallpaper</div>
+        <div class="cfg-title">🖼️ Desktop Wallpaper</div>
         <div class="cfg-grid" id="wpGrid"></div>
       </div>
       <div class="cfg-section">
-        <div class="cfg-title">🎨 Window & Taskbar Theme</div>
+        <div class="cfg-title">🎨 Windows XP Color Scheme / Theme</div>
         <div class="cfg-grid" id="thGrid"></div>
       </div>
       <div class="cfg-section">
-        <div class="cfg-title">⚙️ Other Options</div>
+        <div class="cfg-title">⚡ Display Effects & Performance</div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn98" id="sndBtn" onclick="toggleSound()">🔊 Sound: ON</button>
-          <button class="btn98" onclick="spawnToast('🔄 Desktop refreshed.')">🔄 Refresh</button>
+          <button class="btn98" id="crtBtn" onclick="toggleCrtMode()">📺 CRT Scanlines: OFF</button>
+          <button class="btn98" id="turboBtn" onclick="toggleLowPowerMode()">⚡ Turbo 60 FPS Mode</button>
           <button class="btn98" onclick="confettiBurst(innerWidth/2,innerHeight/2); spawnToast('🎉 Free confetti!')">🎉 Confetti</button>
         </div>
       </div>
+      <div class="cfg-section">
+        <div class="cfg-title">🛠️ System, Audio & Diagnostics</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn98" id="sndBtn" onclick="toggleSound()">🔊 Sound: ON</button>
+          <button class="btn98" onclick="uiConfirmSfx(); spawnToast('🔊 SFX Test OK')">🔔 Test Audio</button>
+          <button class="btn98" onclick="clearSystemCache()">🧹 Clear Popups & Cache</button>
+          <button class="btn98" onclick="resetFlightRecords()">🔄 Reset Flight Records</button>
+          <button class="btn98" onclick="openWindow('win-main'); startScan();">🛡️ Antivirus Health Scan</button>
+        </div>
+      </div>
     </div>
-    <div class="status-bar"><span class="cell">ARC Control Panel</span><span class="cell">Instant changes</span></div>
+    <div class="status-bar"><span class="cell">ARC Control Panel</span><span class="cell">500,000,000 ARC 🪙</span><span class="cell">Instant changes</span></div>
   </div>
 
   <div class="window" id="win-memes" style="left:330px; top:70px; width:700px;">
-    <div class="title-bar green"><span>📁 Memes — Official Collection</span>
+    <div class="title-bar green"><span>📁 My Memes — Official Legion & Combat Perks</span>
       <div class="tb-btns"><button onclick="minimize('win-memes')">_</button><button onclick="maxWin('win-memes')">□</button><button class="close" onclick="closeWindow('win-memes')">✕</button></div></div>
     <div class="window-body" style="background:#f4f2e8;">
-      <div class="memes-head"><h2>OFFICIAL MEMES</h2><span>6 memes • Follow the legion on X</span></div>
+      <div class="memes-banner">
+        <span>🚀 <b>SHIPS.EXE PERKS ACTIVE</b>: Every official meme confers permanent combat perks in ships.exe! Click any card to hear its sound & visit on X.</span>
+      </div>
+      <div class="memes-head"><h2>OFFICIAL MEME ARSENAL</h2><span>6 verified memes • Active in ships.exe</span></div>
       <div class="meme-grid">
-        <div class="meme-tile soonTile" onclick="openMeme('Pingu','https://x.com/PinguMemeX')"><div class="mt-icon">🐧</div><div class="mt-name">Pingu</div><div class="mt-desc">The most dangerous penguin on digital ice. Noot noot.</div><span class="mt-badge x">FOLLOW ON X</span></div>
-        <div class="meme-tile soonTile" onclick="openMeme('Pug Galaxys','https://x.com/Puggalaxys1')"><div class="mt-icon">🐶</div><div class="mt-name">Pug Galaxys</div><div class="mt-desc">A space pug guarding entire galaxies of memes.</div><span class="mt-badge x">FOLLOW ON X</span></div>
-        <div class="meme-tile soonTile" onclick="openMeme('Shitcoin Lovers','https://x.com/ShitCoinsLovers')"><div class="mt-icon">💩</div><div class="mt-name">Shitcoin Lovers</div><div class="mt-desc">True love for coins worth nothing. HODL.</div><span class="mt-badge x">FOLLOW ON X</span></div>
-        <div class="meme-tile soonTile" onclick="openMeme('Tick Cult','https://x.com/TICKCULT')"><div class="mt-icon"><img src="assets/TICKCULT.jpg" alt="Tick Cult" style="width:52px;height:52px;border-radius:50%;object-fit:cover;box-shadow:0 0 12px rgba(0,0,0,.25);"></div><div class="mt-name">Tick Cult</div><div class="mt-desc">The cult of the tick that confirms everything. Tick tick tick.</div><span class="mt-badge x">FOLLOW ON X</span></div>
-        <div class="meme-tile soonTile" onclick="openMeme('WHATIF','https://x.com/WHIFOFFICIAL')"><div class="mt-icon">🤔</div><div class="mt-name">WHATIF</div><div class="mt-desc">What if your meme defended the whole network? It does now.</div><span class="mt-badge x">FOLLOW ON X</span></div>
-        <div class="meme-tile soonTile" onclick="openMeme('POME On Arc','https://x.com/ProofOfMeme_arc/with_replies')"><div class="mt-icon">🧾</div><div class="mt-name">POME On Arc</div><div class="mt-desc">Proof of Meme: every laugh leaves a verifiable trace on ARC.</div><span class="mt-badge x">FOLLOW ON X</span></div>
+        <div class="meme-tile" onclick="openMeme('Pingu','https://x.com/PinguMemeX')">
+          <div class="mt-icon">🐧</div>
+          <div class="mt-name">Pingu</div>
+          <div class="mt-desc">Digital ice penguin. Noot noot!</div>
+          <span class="mt-badge perk">✨ PERK: Piper Symphony</span>
+          <span class="mt-badge x">FOLLOW ON X</span>
+        </div>
+        <div class="meme-tile" onclick="openMeme('Pug Galaxys','https://x.com/Puggalaxys1')">
+          <div class="mt-icon">🐶</div>
+          <div class="mt-name">Pug Galaxys</div>
+          <div class="mt-desc">Space pug guarding meme galaxies.</div>
+          <span class="mt-badge perk">❤️ PERK: +1 Starting Life</span>
+          <span class="mt-badge x">FOLLOW ON X</span>
+        </div>
+        <div class="meme-tile" onclick="openMeme('Shitcoin Lovers','https://x.com/ShitCoinsLovers')">
+          <div class="mt-icon">💩</div>
+          <div class="mt-name">Shitcoin Lovers</div>
+          <div class="mt-desc">True meme love. HODL to zero or moon.</div>
+          <span class="mt-badge perk">💎 PERK: 2x Drop Rate Boost</span>
+          <span class="mt-badge x">FOLLOW ON X</span>
+        </div>
+        <div class="meme-tile" onclick="openMeme('Tick Cult','https://x.com/TICKCULT')">
+          <div class="mt-icon"><img src="assets/TICKCULT.jpg" alt="Tick Cult" style="width:52px;height:52px;border-radius:50%;object-fit:cover;box-shadow:0 0 12px rgba(0,0,0,.25);"></div>
+          <div class="mt-name">Tick Cult</div>
+          <div class="mt-desc">The cult that confirms everything.</div>
+          <span class="mt-badge perk">🛡️ PERK: Plasma Shield</span>
+          <span class="mt-badge x">FOLLOW ON X</span>
+        </div>
+        <div class="meme-tile" onclick="openMeme('WHATIF','https://x.com/WHIFOFFICIAL')">
+          <div class="mt-icon">🤔</div>
+          <div class="mt-name">WHATIF</div>
+          <div class="mt-desc">What if your meme defended the whole network?</div>
+          <span class="mt-badge perk">💣 PERK: +1 Bomb & -25% CD</span>
+          <span class="mt-badge x">FOLLOW ON X</span>
+        </div>
+        <div class="meme-tile" onclick="openMeme('POME On Arc','https://x.com/ProofOfMeme_arc/with_replies')">
+          <div class="mt-icon">🧾</div>
+          <div class="mt-name">POME On Arc</div>
+          <div class="mt-desc">Proof of Meme: verifiable digital traces.</div>
+          <span class="mt-badge perk">❄️ PERK: -15% Enemy Bullet Speed</span>
+          <span class="mt-badge x">FOLLOW ON X</span>
+        </div>
       </div>
     </div>
-    <div class="status-bar"><span class="cell"> 6 objects</span><span class="cell">Follow all on X</span></div>
+    <div class="status-bar"><span class="cell"> 6 objects</span><span class="cell">100% Perks Active in ships.exe</span><span class="cell">Follow on X</span></div>
   </div>
 
   <div class="window" id="win-games" style="left:400px; top:250px; width:380px;">
@@ -289,25 +338,6 @@ Signed: The ARC AI.</div>
     </div>
     <div class="status-bar"><span class="cell">Ln 1, Col 1</span><span class="cell">UTF-8</span></div>
   </div>
-
-  <div class="window" id="win-config" style="left:180px; top:120px; width:460px;">
-    <div class="title-bar purple"><span>🎛️ Display Properties — Personalize</span>
-      <div class="tb-btns"><button onclick="minimize('win-config')">_</button><button onclick="maxWin('win-config')">□</button><button class="close" onclick="closeWindow('win-config')">✕</button></div></div>
-    <div class="window-body">
-      <div class="cfg-section">
-        <div class="cfg-title">🖼️ Desktop Background (Wallpaper)</div>
-        <div class="cfg-grid" id="wpGrid"></div>
-      </div>
-      <div class="cfg-section">
-        <div class="cfg-title">🎨 Windows XP Color Scheme / Theme</div>
-        <div class="cfg-grid" id="thGrid"></div>
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
-        <button class="btn98" onclick="closeWindow('win-config')">OK</button>
-        <button class="btn98" onclick="closeWindow('win-config')">Cancel</button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <div class="ctx-menu" id="ctxMenu">
@@ -357,36 +387,44 @@ Signed: The ARC AI.</div>
   <div class="tb-win-wrap">
     <button class="tb-win" id="tb-win-main" onclick="taskClick('win-main')">🛡️ VirusARC.exe</button>
     <button class="tb-win" id="tb-win-browser" onclick="taskClick('win-browser')">🌐 ARC Browser</button>
-    <button class="tb-win" id="tb-win-memes" onclick="taskClick('win-memes')">📁 Memes</button>
+    <button class="tb-win" id="tb-win-memes" onclick="taskClick('win-memes')">📁 My Memes</button>
     <button class="tb-win" id="tb-win-games" onclick="taskClick('win-games')">🎮 Games</button>
     <button class="tb-win" id="tb-win-mines" onclick="taskClick('win-mines')" style="display:none;">💣 Minesweeper</button>
     <button class="tb-win" id="tb-win-spider" onclick="taskClick('win-spider')" style="display:none;">🕷️ Spider</button>
     <button class="tb-win" id="tb-win-pinball" onclick="taskClick('win-pinball')" style="display:none;">🚀 Pinball</button>
     <button class="tb-win" id="tb-win-note" onclick="taskClick('win-note')">📄 README.txt</button>
-    <button class="tb-win" id="tb-win-config" onclick="taskClick('win-config')" style="display:none;">🎛️ Settings</button>
+    <button class="tb-win" id="tb-win-config" onclick="taskClick('win-config')" style="display:none;">🎛️ Control Panel</button>
   </div>
   <div class="tray"><span>🛡️</span><span>🔊</span><span id="clock">--:--</span></div>
 </div>
 
 <div class="start-menu" id="startMenu">
-  <div class="sm-top"><div class="sm-avatar">😎</div> ARC User</div>
+  <div class="sm-top">
+    <div class="sm-avatar">😎</div>
+    <div style="flex:1;">
+      <div style="font-weight:bold; font-size:13px; line-height:1.2;">ARC User</div>
+      <div style="font-size:10px; opacity:0.85; display:flex; align-items:center; gap:4px;"><span style="color:#00ff41; font-size:9px;">●</span> ARC Network: Online</div>
+    </div>
+    <span style="font-size:10px; padding:2px 7px; background:rgba(0,0,0,.35); border-radius:10px; border:1px solid rgba(0,212,255,.5); color:#00d4ff; font-weight:bold;">v4.2 XP</span>
+  </div>
   <div class="sm-body">
     <div class="sm-left">
       <div class="sm-item" onclick="openWindow('win-main'); toggleStart();"><span class="ic">🛡️</span> VirusARC.exe</div>
       <div class="sm-item" onclick="openWindow('win-browser'); toggleStart();"><span class="ic">🌐</span> ARC Browser</div>
       <div class="sm-item" onclick="toggleStart(); openNaves();"><span class="ic">🚀</span> ships.exe</div>
-      <div class="sm-item" onclick="openWindow('win-memes'); toggleStart();"><span class="ic">📁</span> Memes</div>
-      <div class="sm-item" onclick="openWindow('win-games'); toggleStart();"><span class="ic">🎮</span> Games</div>
+      <div class="sm-item" onclick="openWindow('win-memes'); toggleStart();"><span class="ic">📁</span> My Memes Vault</div>
+      <div class="sm-item" onclick="openWindow('win-games'); toggleStart();"><span class="ic">🎮</span> Games Arcade</div>
       <div class="sm-item" onclick="openWindow('win-note'); toggleStart();"><span class="ic">📄</span> README.txt</div>
       <div class="sm-sep"></div>
+      <div class="sm-item" onclick="toggleStart(); toggleArcCmd(true);"><span class="ic">⌨️</span> Run Command (Ctrl+K)...</div>
       <div class="sm-item" onclick="toggleStart(); showAd();"><span class="ic">💳</span> Renew 12 months</div>
     </div>
     <div class="sm-right">
-      <div class="sm-item" onclick="openWindow('win-config'); toggleStart();"><span class="ic">🎛️</span> Settings</div>
-      <div class="sm-item" onclick="spawnToast('🖼️ My Memes: 4 official, coming soon to piper.meme')"><span class="ic">🖼️</span> My Memes</div>
-      <div class="sm-item" onclick="spawnToast('🎛️ Control Panel: everything under ARC control')"><span class="ic">🎛️</span> Control Panel</div>
+      <div class="sm-item" onclick="openWindow('win-config'); toggleStart();"><span class="ic">🎛️</span> Control Panel</div>
+      <div class="sm-item" onclick="openWindow('win-memes'); toggleStart();"><span class="ic">🖼️</span> My Memes</div>
+      <div class="sm-item" onclick="openWindow('win-config'); toggleStart();"><span class="ic">⚙️</span> Display Settings</div>
       <div class="sm-sep"></div>
-      <div class="sm-item" onclick="spawnToast('❓ Help: none available. Good luck ')"><span class="ic">❓</span> Help</div>
+      <div class="sm-item" onclick="spawnToast('❓ Help: Join the ARC community on X / Telegram for 24/7 support!')"><span class="ic">❓</span> Help & Support</div>
     </div>
   </div>
   <div class="sm-bottom">
