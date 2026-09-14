@@ -978,12 +978,8 @@ arcShipImg.src = 'assets/arc_ship.png';
 const itemCircleImg = new Image(); itemCircleImg.src = 'assets/item_circle.png';
 const itemPiperImg  = new Image(); itemPiperImg.src  = 'assets/item_piper.png';
 const itemUsdcImg   = new Image(); itemUsdcImg.src   = 'assets/item_usdc.png';
-const enemyAssetFiles = { kami:'needle.svg', camo:'wraith.svg', swarm:'splitter.svg', convoy:'bastion.svg', cruiser:'boss.svg', shield:'bastion.svg', spinner:'pulse.svg', quantum:'beacon.svg', hunt:'hunter.svg' };
 const enemyAssetImages = {};
-Object.keys(enemyAssetFiles).forEach(function(type){
-  const img = new Image(); img.decoding = 'async'; img.src = 'assets/enemies/' + enemyAssetFiles[type];
-  img.onload = function(){ enemyAssetImages[type] = img; };
-});
+
 
 /* ================= SPATIAL HASH GRID (O(1) COLLISIONS) ================= */
 const GRID_CELL_SIZE = 80;
@@ -1064,7 +1060,7 @@ const ebulletPool = Array.from({length: MAX_EBULLETS}, function(){
   return { active: false, x: 0, y: 0, vx: 0, vy: 0, kind: 'normal', rot: 0, spin: 0, t: 0, baseX: 0, amp: 0, trail: [] };
 });
 function spawnEnemyBullet(p){
-  const pomeSlow = (typeof ownedMemes !== 'undefined' && ownedMemes.pome) ? 0.9 : 1;
+  const pomeSlow = (typeof ownedMemes !== 'undefined' && ownedMemes.pome) ? 0.85 : 1;
   for(let i = 0; i < MAX_EBULLETS; i++){
     const b = ebulletPool[i];
     if(!b.active){
@@ -1130,7 +1126,7 @@ function initTextureAtlas(){
     });
 
     // 2. Pre-render Enemy Ship archetypes
-    ['kami','camo','swarm','convoy','cruiser','shield','spinner','quantum','hunt'].forEach(function(t){
+    ['kami','camo','swarm','convoy','cruiser','shield','spinner','quantum','beacon','hunt'].forEach(function(t){
       const w = 90, h = 90;
       const cv = createOffscreen(w, h);
       const ctx = cv.getContext('2d');
@@ -1204,7 +1200,9 @@ function loadEnemySvgSprites(){
   Object.keys(ENEMY_SVG_MAP).forEach(function(type){
     try {
       const img = new Image();
+      img.decoding = 'async';
       img.onload = function(){
+        enemyAssetImages[type] = img;
         const size = type === 'boss' ? 220 : 90;
         const cv = createOffscreen(size, size);
         const ctx = cv.getContext('2d');
@@ -1306,7 +1304,17 @@ function drawEnemyBaseSprite(ctx, type){
     ctx.save(); ctx.globalCompositeOperation='lighter';
     const qg=ctx.createRadialGradient(0,2,0,0,2,16);
     qg.addColorStop(0,'rgba(0,212,255,.9)'); qg.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=qg; ctx.beginPath(); ctx.arc(0,2,16,0,7); ctx.fill(); ctx.restore();
+  } else if(type==='beacon'){
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#fbbf24'; ctx.lineWidth=2;
+    ctx.fillRect(-22,-22,44,44); ctx.strokeRect(-22,-22,44,44);
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    const bg=ctx.createRadialGradient(0,0,0,0,0,24);
+    bg.addColorStop(0,'rgba(251,191,36,.85)'); bg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=bg; ctx.beginPath(); ctx.arc(0,0,24,0,7); ctx.fill(); ctx.restore();
+    ctx.strokeStyle='#fef08a'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(0,0,16,0,7); ctx.stroke();
+    ctx.fillStyle='#fbbf24'; ctx.beginPath(); ctx.arc(0,0,6,0,7); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(0,0,2.5,0,7); ctx.fill();
   } else {
     // Default hunt / interceptor
     ctx.save(); ctx.globalCompositeOperation='lighter';
@@ -1444,8 +1452,8 @@ const NV={ on:false, state:'off', diff:'arcade', diffName:'ARCADE CHALLENGE',
   lives:3, round:1, roundKind:'recon', roundAffix:null, budget:0, squadCd:0, t:0,
   freeze:0, glitch:0, shake:0, muzzle:0, crtT:0, hyperT:0, bootLine:0, bootChar:0, transT:0, transTxt:'', hideBgFx:false,
   combo:0, comboT:0, bombs:2, bombMax:3, bombCd:0, dashCd:0, misCd:0, lasCd:0, bombT:0, bombHit:false, laserFlash:0, astCd:60, cdT:0, cdStage:4, railgunT:0, railgunX:0,
-  overdriveT:0, dronesT:0, cryoT:0, phaseT:0, magnetT:0,
-  usdcActive:0, piperSymphonyT:0, empT:0, chronoT:0, symphonyCount:0,
+  overdriveT:0, dronesT:0, dronesMax:540, cryoT:0, cryoMax:420, phaseT:0, phaseMax:360, magnetT:0,
+  usdcActive:0, usdcMax:480, piperSymphonyT:0, piperMax:480, empT:0, empMax:360, chronoT:0, symphonyCount:0,
   decoys:[], sonicRings:[], orbitals:[],
   stars:[], bin:[], neb:null, nebX:0, groups:[],
   player:null, bullets:[], missiles:[], ebullets:[], enemies:[], asteroids:[], scraps:[], pows:[],
@@ -1625,7 +1633,7 @@ function nvStart(){
   document.getElementById('nvBossWrap').classList.remove('show');
   document.getElementById('nvStatus').textContent='';
   document.getElementById('nvStatus').classList.remove('show');
-  renderHearts(); renderModules(); updateDiffIndicator();
+  renderHearts(); renderModules(); renderActiveBuffs(); updateDiffIndicator();
   startBriefing();
 }
 function updateDiffIndicator(){
@@ -1711,10 +1719,10 @@ function nextRound(){
     ? AFFIX_POOL[Math.floor(Math.random() * AFFIX_POOL.length)]
     : null;
 
-  // Infinite procedural scaling budget
-  const baseBudget = 18 + NV.round * 4 + Math.floor(NV.round / 5) * 8;
+  // Infinite procedural scaling budget (longer, more engaging rounds)
+  const baseBudget = 32 + NV.round * 7 + Math.floor(NV.round / 3) * 10;
   if(isBoss){
-    NV.budget = 8;
+    NV.budget = 16;
     nvSpawnBoss();
   } else {
     NV.budget = baseBudget;
@@ -1810,14 +1818,18 @@ function nvSpawnBoss(){
   const type = NV.bossIdx%2===1 ? 'ac' : 'fab';
   const scaling = 1 + (NV.round / 5 - 1) * 0.35;
   const hpMul = 1.15 * scaling;
+  const W = innerWidth;
+  const isMob = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (W < 768);
   if(type==='ac'){
-    NV.boss={type:'ac',x:innerWidth/2,y:-180,dir:1,entering:true,phase:1,
-      plates:[-96,-32,32,96].map(function(o){const hp=Math.ceil(22*hpMul);return {off:o,hp:hp,max:hp};}),
+    const pSpacing = isMob ? (W < 400 ? 54 : 70) : 96;
+    NV.boss={type:'ac',x:W/2,y:-180,dir:1,entering:true,phase:1,
+      plates:[-pSpacing*1.5, -pSpacing*0.5, pSpacing*0.5, pSpacing*1.5].map(function(o){const hp=Math.ceil(22*hpMul);return {off:o,hp:hp,max:hp};}),
       core:Math.ceil(85*hpMul), coreMax:Math.ceil(85*hpMul), fireCd:70,spiralCd:200};
     document.getElementById('nvBossName').textContent='☠ THE BATTLESHIP [MK.'+NV.bossIdx+']';
   } else {
-    NV.boss={type:'fab',x:innerWidth/2,y:-240,entering:true,phase:1,
-      belts:[{off:-120,hp:Math.ceil(30*hpMul),max:Math.ceil(30*hpMul),anim:0},{off:120,hp:Math.ceil(30*hpMul),max:Math.ceil(30*hpMul),anim:0}],
+    const beltOff = isMob ? Math.min(100, Math.floor(W * 0.26)) : 120;
+    NV.boss={type:'fab',x:W/2,y:-240,dir:1,entering:true,phase:1,
+      belts:[{off:-beltOff,hp:Math.ceil(30*hpMul),max:Math.ceil(30*hpMul),anim:0},{off:beltOff,hp:Math.ceil(30*hpMul),max:Math.ceil(30*hpMul),anim:0}],
       core:Math.ceil(110*hpMul), coreMax:Math.ceil(110*hpMul), droneCd:100, fireCd:90,spiralCd:180};
     document.getElementById('nvBossName').textContent='☠ THE INDUSTRIAL FACTORY [MK.'+NV.bossIdx+']';
   }
@@ -1891,6 +1903,39 @@ function renderModules(){
     el.appendChild(div);
   });
 }
+
+function renderActiveBuffs(){
+  const el = document.getElementById('nvBuffs');
+  if(!el) return;
+  const buffs = [];
+  if(NV.usdcActive > 0) buffs.push({ id:'usdc', ico:'💎', name:'USDC SHIELD', t:NV.usdcActive, max:NV.usdcMax||480, col:'#2775ca' });
+  if(NV.piperSymphonyT > 0) buffs.push({ id:'piper', ico:'🎵', name:'PIPER SYMPHONY', t:NV.piperSymphonyT, max:NV.piperMax||480, col:'#7cbb00' });
+  if(NV.dronesT > 0) buffs.push({ id:'circle', ico:'⭕', name:'CIRCLE DRONES', t:NV.dronesT, max:NV.dronesMax||540, col:'#ffffff' });
+  if(NV.cryoT > 0) buffs.push({ id:'cryo', ico:'❄️', name:'CRYO ZERO', t:NV.cryoT, max:NV.cryoMax||420, col:'#00ffff' });
+  if(NV.phaseT > 0) buffs.push({ id:'phase', ico:'👻', name:'PHASE SHIFT', t:NV.phaseT, max:NV.phaseMax||360, col:'#a855f7' });
+  if(NV.empT > 0) buffs.push({ id:'emp', ico:'⚡', name:'EMP LOCK', t:NV.empT, max:NV.empMax||360, col:'#00d4ff' });
+
+  if(buffs.length === 0){
+    el.innerHTML = '';
+    return;
+  }
+
+  let html = '';
+  buffs.forEach(function(b){
+    const sec = (b.t / 60).toFixed(1);
+    const pct = Math.max(0, Math.min(100, (b.t / b.max) * 100));
+    const isExpiring = b.t < 120; // less than 2s
+    html += '<div class="hud-buff-item'+(isExpiring?' expiring':'')+'" style="--bcol:'+b.col+';--bcol-glow:'+b.col+'44;">' +
+      '<div class="hud-buff-ico">'+b.ico+'</div>' +
+      '<div class="hud-buff-info">' +
+        '<div class="hud-buff-label">'+b.name+'</div>' +
+        '<div class="hud-buff-bar"><div class="hud-buff-fill" style="width:'+pct+'%"></div></div>' +
+      '</div>' +
+      '<div class="hud-buff-time">'+sec+'s</div>' +
+    '</div>';
+  });
+  el.innerHTML = html;
+}
 function showStatus(txt){ const st=document.getElementById('nvStatus'); st.textContent=txt; st.classList.add('show');
   setTimeout(function(){st.classList.remove('show');},1500); }
 function showLifeBonus(){ const el=document.getElementById('nvLifeBonus'); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
@@ -1941,10 +1986,17 @@ function nvDebris(x,y,n){ for(let i=0;i<(n||2);i++){ if(NV.debris.length>44)NV.d
 
 function playerHit(){
   const p=NV.player; if(!p||p.inv>0||p.dead)return;
-  if(p.shield>0){ p.shield=0; NV.rings.push({x:p.x,y:p.y,r:10,max:50}); sfx(300,.2,'triangle'); NV.freeze=3; return; }
+  if(p.shield>0){
+    p.shield=0;
+    p.inv=60; // 1s grace period on shield break
+    NV.rings.push({x:p.x,y:p.y,r:10,max:60});
+    sfx(300,.2,'triangle'); NV.freeze=3;
+    return;
+  }
   const lostIdx=NV.lives-1;
   NV.lives--; renderHearts(lostIdx);
-  p.inv=110; NV.glitch=26; NV.freeze=4; NV.shake=16;
+  p.inv=180; // 3.0s exact invulnerability (untouchable)
+  NV.glitch=26; NV.freeze=4; NV.shake=16;
   nvBoom(p.x,p.y,1.4,'normal'); hitSfx();
   NV.combo=0; document.getElementById('nvCombo').textContent='';
   
@@ -2010,19 +2062,28 @@ function killEnemy(e,idx,givePow){
   addScore(pts, e.type!=='hunt');
   if(e.type!=='hunt') NV.freeze=Math.max(NV.freeze, 4);
   const dropChance = (typeof ownedMemes !== 'undefined' && ownedMemes.shitcoin) ? 0.32 : 0.16;
-  if(givePow!==false && Math.random() < dropChance) NV.pows.push({x:e.x, y:e.y, vy:1.5, type:randomPowerUp()});
+  if(givePow!==false && Math.random() < dropChance){
+    NV.pows.push({
+      x: e.x,
+      y: e.y,
+      vy: 1.35,
+      type: randomPowerUp(),
+      life: 480,    // 8.0 seconds on screen
+      maxLife: 480
+    });
+  }
   NV.enemies.splice(idx,1);
 }
 function randomPowerUp(){
   const r=Math.random();
-  if(r<.18) return 'piper';
-  if(r<.36) return 'circle';
-  if(r<.52) return 'usdc';
-  if(r<.66) return 'E';
-  if(r<.78) return '+';
-  if(r<.88) return 'Y';
-  if(r<.95) return 'P';
-  return 'B';
+  if(r < 0.14) return 'piper';  // 14% Piper Symphony
+  if(r < 0.24) return 'circle'; // 10% Circle Drones & Grav Well
+  if(r < 0.36) return 'usdc';   // 12% USDC Shield
+  if(r < 0.50) return 'E';      // 14% EMP Weapon Lock
+  if(r < 0.60) return '+';      // 10% Core Repair +1 Life
+  if(r < 0.74) return 'Y';      // 14% Cryo Freeze 2x DMG
+  if(r < 0.86) return 'P';      // 12% Phase Ghost
+  return 'B';                   // 14% Thermonuclear Bomb
 }
 function detonateAsteroid(a,idx){
   nvBoom(a.x,a.y,1.6,'volatile'); NV.rings.push({x:a.x,y:a.y,r:10,max:170});
@@ -2074,24 +2135,33 @@ function fireMissiles(){
   // X — ARC RAILGUN: full-screen piercing rail beam straight ahead (long range)
   const p=NV.player; if(!p||NV.misCd>0||NV.state!=='playing')return;
   NV.misCd=240; NV.railgunT=22; NV.railgunX=p.x; NV.shake=Math.max(NV.shake,10);
-  showStatus('⚡ ARC RAILGUN');
+  const isPinguIce = (typeof ownedMemes !== 'undefined' && ownedMemes.pingu);
+  if(isPinguIce){
+    NV.cryoMax = 420;
+    NV.cryoT = Math.max(NV.cryoT, 180); // 3s freeze on all enemies from Pingu perk
+    renderActiveBuffs();
+    showStatus('❄️ PINGU ICE RAILGUN');
+  } else {
+    showStatus('⚡ ARC RAILGUN');
+  }
   sfx(1200,.35,'sawtooth',.25); setTimeout(function(){sfx(300,.3,'square',.2);},70);
   // Instant corridor damage along the full vertical path
   for(let i=NV.enemies.length-1;i>=0;i--){
     const e=NV.enemies[i];
     if(e.y < p.y && Math.abs(e.x-p.x)<36){
-      if(e.hp && e.hp>8){ e.hp-=8; e.flash=4; nvBoom(e.x,e.y,1,'purple'); sparks(e.x,e.y,6,'#00d4ff'); }
+      const dmg = isPinguIce ? 14 : 8;
+      if(e.hp && e.hp>dmg){ e.hp-=dmg; e.flash=4; nvBoom(e.x,e.y,1,'purple'); sparks(e.x,e.y,6,isPinguIce?'#00ffff':'#00d4ff'); }
       else killEnemy(e,i);
     }
   }
   for(let i=NV.asteroids.length-1;i>=0;i--){
     const a=NV.asteroids[i];
     if(a.y < p.y && Math.abs(a.x-p.x)<40){
-      a.hp-=10;
+      a.hp-=(isPinguIce?14:10);
       if(a.hp<=0){ if(a.vol)detonateAsteroid(a,i); else { nvBoom(a.x,a.y,1,'rock'); NV.asteroids.splice(i,1); addScore(50); } }
     }
   }
-  if(NV.boss && Math.abs(NV.boss.x-p.x)<90 && NV.boss.y < p.y){ damageBoss(12,p.x,NV.boss.y); }
+  if(NV.boss && Math.abs(NV.boss.x-p.x)<90 && NV.boss.y < p.y){ damageBoss(isPinguIce?18:12,p.x,NV.boss.y); }
 }
 
 function firePierce(){
@@ -2303,7 +2373,7 @@ function updateOrInsertRecord(list, newEntry){
 function syncPostRecord(entry){
   try {
     // Try Vercel Serverless Function first (/api/records -> api/records-node.js via vercel.json)
-    fetch('api/records', {
+    fetch('/api/records', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ entry: entry })
@@ -2316,7 +2386,7 @@ function syncPostRecord(entry){
       renderLeaderboard(entry.name);
     }).catch(function(){
       // Fallback to Hostinger / PHP server
-      fetch('api/records.php', {
+      fetch('/api/records.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entry: entry })
@@ -2337,7 +2407,7 @@ function syncPostRecord(entry){
 function syncGetRecords(){
   try {
     // Try Vercel Serverless Function first (/api/records)
-    fetch('api/records', { method: 'GET' })
+    fetch('/api/records', { method: 'GET' })
       .then(function(res){
         if(!res.ok) throw new Error('Vercel API fail, try PHP');
         return res.json();
@@ -2356,7 +2426,7 @@ function syncGetRecords(){
         renderLeaderboard();
       }).catch(function(){
         // Fallback to Hostinger / PHP server
-        fetch('api/records.php', { method: 'GET' })
+        fetch('/api/records.php', { method: 'GET' })
           .then(function(res){ if(!res.ok) throw new Error(); return res.json(); })
           .then(function(data){
             if(data && Array.isArray(data.allTime)){
@@ -2468,11 +2538,13 @@ let browserTabs = [{id:'tab1',title:'New Tab',url:'arc://newtab',favicon:'🏠',
 let activeTabId = 'tab1';
 let tabCounter = 1;
 
-let userWallet = {
-  ARC: 500000000,
-  USDC: 1000,
-  PIPER: 50000
-};
+let userWallet = (function(){
+  try {
+    const saved = localStorage.getItem('arc_user_wallet');
+    if(saved) return Object.assign({ ARC: 500000000, USDC: 1000, PIPER: 50000 }, JSON.parse(saved));
+  } catch(e){}
+  return { ARC: 500000000, USDC: 1000, PIPER: 50000 };
+})();
 
 let swapState = {
   from: 'ARC',
@@ -2480,12 +2552,20 @@ let swapState = {
   fromAmt: 50000
 };
 
-let ownedMemes = {
-  pingu: false,
-  pug: false,
-  shitcoin: false,
-  tick: false
-};
+let ownedMemes = (function(){
+  try {
+    const saved = localStorage.getItem('arc_owned_memes');
+    if(saved) return Object.assign({ pingu:false, pug:false, shitcoin:false, tick:false, whatif:false, pome:false }, JSON.parse(saved));
+  } catch(e){}
+  return { pingu: false, pug: false, shitcoin: false, tick: false, whatif: false, pome: false };
+})();
+
+function saveWalletState(){
+  try {
+    localStorage.setItem('arc_user_wallet', JSON.stringify(userWallet));
+    localStorage.setItem('arc_owned_memes', JSON.stringify(ownedMemes));
+  } catch(e){}
+}
 
 const TOKEN_RATES = {
   ARC: 1,
@@ -2494,6 +2574,7 @@ const TOKEN_RATES = {
 };
 
 function updateGlobalArcDisplays(){
+  saveWalletState();
   const s = userWallet.ARC.toLocaleString();
   const el1 = document.getElementById('sidebarArcBal');
   if(el1) el1.textContent = s;
@@ -2755,12 +2836,12 @@ window.addEventListener('keydown', function(e){
 });
 
 const memeProducts = [
-  { id:'pingu', name:'Pingu', icon:'🐧', x:'https://x.com/PinguMemeX', price:50000000, desc:'The most dangerous penguin on digital ice. Noot noot.', perk:'❄️ Ice Laser in ships.exe' },
-  { id:'pug', name:'Pug Galaxys', icon:'🐶', x:'https://x.com/Puggalaxys1', price:100000000, desc:'A space pug guarding meme galaxies across the metaverse.', perk:'❤️ +1 Extra Life' },
-  { id:'shitcoin', name:'Shitcoin Lovers', icon:'💩', x:'https://x.com/ShitCoinsLovers', price:200000000, desc:'True love for worthless coins. Pure diamond hands.', perk:'🪙 2x ARC Drop Rate' },
-  { id:'tick', name:'Tick Cult', icon:'✅', img:'assets/TICKCULT.jpg', x:'https://x.com/TICKCULT', price:300000000, desc:'The cult of the tick confirming spiritual infection. Tick tick tick.', perk:'🛡️ Auto-Shield on ship' },
-  { id:'whatif', name:'WHATIF', icon:'🤔', x:'https://x.com/WHIFOFFICIAL', price:400000000, desc:'What if your meme defended the whole network? It does now.', perk:'⚡ +1 starting Bomb & 20% faster ability cooldowns' },
-  { id:'pome', name:'POME On Arc', icon:'🧾', x:'https://x.com/ProofOfMeme_arc/with_replies', price:500000000, desc:'Proof of Meme: every laugh leaves a verifiable trace on ARC.', perk:'🧠 Enemy bullets 10% slower' }
+  { id:'pingu', name:'Pingu', icon:'🐧', x:'https://x.com/PinguMemeX', price:25000000, desc:'The most dangerous penguin on digital ice. Noot noot.', perk:'❄️ Ice Railgun in ships.exe (+Cryo Freeze)' },
+  { id:'pug', name:'Pug Galaxys', icon:'🐶', x:'https://x.com/Puggalaxys1', price:50000000, desc:'A space pug guarding meme galaxies across the metaverse.', perk:'❤️ +1 Extra Life' },
+  { id:'shitcoin', name:'Shitcoin Lovers', icon:'💩', x:'https://x.com/ShitCoinsLovers', price:100000000, desc:'True love for worthless coins. Pure diamond hands.', perk:'🪙 2x Power-Up Drop Rate' },
+  { id:'tick', name:'Tick Cult', icon:'✅', img:'assets/TICKCULT.jpg', x:'https://x.com/TICKCULT', price:150000000, desc:'The cult of the tick confirming spiritual infection. Tick tick tick.', perk:'🛡️ Quantum Auto-Shield' },
+  { id:'whatif', name:'WHATIF', icon:'🤔', x:'https://x.com/WHIFOFFICIAL', price:200000000, desc:'What if your meme defended the whole network? It does now.', perk:'⚡ +1 Bomb & 25% faster ability cooldowns' },
+  { id:'pome', name:'POME On Arc', icon:'🧾', x:'https://x.com/ProofOfMeme_arc/with_replies', price:300000000, desc:'Proof of Meme: every laugh leaves a verifiable trace on ARC.', perk:'🧠 Enemy bullets 15% slower' }
 ];
 
 function renderMemeStorePage(){
@@ -3677,19 +3758,23 @@ function powerUpIcon(t){
 }
 function applyPowerUp(t){
   if(t==='usdc'){
-    NV.usdcActive = 720;
+    NV.usdcMax = 480;
+    NV.usdcActive = 480; // 8.0s shield
     addScore(500, true);
     showStatus('💎 USDC LIQUID STAKING SHIELD (+500 PTS)');
   } else if(t==='circle'){
-    NV.dronesT = 900;
-    NV.magnetT = 900;
+    NV.dronesMax = 540;
+    NV.dronesT = 540; // 9.0s drones
+    NV.magnetT = 540;
     NV.bombs = Math.min(NV.bombs + 1, NV.bombMax);
     showStatus('⭕ CIRCLE HYPER-DRONES & GRAVITY WELL');
   } else if(t==='piper'){
-    NV.piperSymphonyT = 600;
+    NV.piperMax = 480;
+    NV.piperSymphonyT = 480; // 8.0s sonic symphony
     showStatus('🎵 PIPER SONIC SYMPHONY');
   } else if(t==='E'){
-    NV.empT = 360;
+    NV.empMax = 360;
+    NV.empT = 360; // 6.0s emp lock
     NV.ebullets = [];
     showStatus('⚡ EMP OVERCHARGE - WEAPONS OFFLINE');
   } else if(t==='+'){
@@ -3698,15 +3783,18 @@ function applyPowerUp(t){
     showLifeBonus();
     showStatus('❤ NANITE CORE REPAIR (+1 LIFE)');
   } else if(t==='Y'){
-    NV.cryoT = 480;
-    showStatus('❄ ABSOLUTE ZERO CRYO SLOW');
+    NV.cryoMax = 420;
+    NV.cryoT = 420; // 7.0s absolute zero
+    showStatus('❄ ABSOLUTE ZERO CRYO SLOW (2X DMG)');
   } else if(t==='P'){
-    NV.phaseT = 300;
+    NV.phaseMax = 360;
+    NV.phaseT = 360; // 6.0s phase shift
     showStatus('👻 PHASE GHOST SHIFT');
   } else if(t==='B'){
     NV.bombs = Math.min(NV.bombs + 1, NV.bombMax);
     showStatus('💣 THERMONUCLEAR VIRUS BOMB');
   }
+  renderActiveBuffs();
 }
 
 /* ============ NAVES GAME LOOP ============ */
@@ -3881,7 +3969,7 @@ function nvLoop(timestamp){
       const comboEl=document.getElementById('nvCombo');
       if(comboEl) comboEl.style.opacity = NV.comboT<40 ? (0.4+0.6*Math.abs(Math.sin(NV.comboT*.18))) : 1; // blinking "about to expire"
       if(NV.comboT===0){ NV.combo=0; comboEl.textContent=''; comboEl.style.opacity=1; } }
-    const cdTick = (typeof ownedMemes !== 'undefined' && ownedMemes.whatif) ? 1.2 : 1; // WHATIF: 20% faster cooldowns
+    const cdTick = (typeof ownedMemes !== 'undefined' && ownedMemes.whatif) ? 1.25 : 1; // WHATIF: 25% faster cooldowns
     if(NV.dashCd>0)NV.dashCd=Math.max(0,NV.dashCd-cdTick); if(NV.misCd>0)NV.misCd=Math.max(0,NV.misCd-cdTick); if(NV.lasCd>0)NV.lasCd=Math.max(0,NV.lasCd-cdTick);
     if(NV.laserFlash>0)NV.laserFlash--; if(NV.muzzle>0)NV.muzzle--;
     if(NV.overdriveT>0)NV.overdriveT--; if(NV.dronesT>0)NV.dronesT--;
@@ -4067,7 +4155,32 @@ function nvLoop(timestamp){
       if(m.t>170){ nvBoom(m.x,m.y,.5,'normal'); m.active=false; continue; }
       let tgt = null, td = 1e9;
       NV.enemies.forEach(function(e){ const dd=Math.hypot(e.x-m.x,e.y-m.y); if(dd<td){td=dd;tgt=e;} });
-      if(NV.boss){ const dd=Math.hypot(NV.boss.x-m.x,NV.boss.y-m.y); if(dd<td){td=dd;tgt=NV.boss;} }
+      if(NV.boss){
+        let bTgtX = NV.boss.x, bTgtY = NV.boss.y;
+        if(NV.boss.type === 'ac'){
+          const livingPlates = NV.boss.plates.filter(function(pl){ return pl.hp > 0; });
+          if(livingPlates.length > 0){
+            let closestPl = livingPlates[0], minPlD = 1e9;
+            livingPlates.forEach(function(pl){
+              const d = Math.hypot((NV.boss.x + pl.off) - m.x, (NV.boss.y + 46) - m.y);
+              if(d < minPlD){ minPlD = d; closestPl = pl; }
+            });
+            bTgtX = NV.boss.x + closestPl.off; bTgtY = NV.boss.y + 46;
+          }
+        } else if(NV.boss.type === 'fab'){
+          const livingBelts = NV.boss.belts.filter(function(bl){ return bl.hp > 0; });
+          if(livingBelts.length > 0){
+            let closestBl = livingBelts[0], minBlD = 1e9;
+            livingBelts.forEach(function(bl){
+              const d = Math.hypot((NV.boss.x + bl.off) - m.x, (NV.boss.y + 52) - m.y);
+              if(d < minBlD){ minBlD = d; closestBl = bl; }
+            });
+            bTgtX = NV.boss.x + closestBl.off; bTgtY = NV.boss.y + 52;
+          }
+        }
+        const dd = Math.hypot(bTgtX - m.x, bTgtY - m.y);
+        if(dd < td){ td = dd; tgt = { x: bTgtX, y: bTgtY }; }
+      }
       NV.asteroids.forEach(function(a){ const dd=Math.hypot(a.x-m.x,a.y-m.y); if(dd<td){td=dd;tgt=a;} });
       if(tgt){ const dx=tgt.x-m.x,dy=tgt.y-m.y,dd=Math.hypot(dx,dy)||1;
         m.vx+= (dx/dd)*.7; m.vy+= (dy/dd)*.7;
@@ -4077,7 +4190,16 @@ function nvLoop(timestamp){
       { const fp=getParticle(); if(fp){ fp.active=true; fp.kind='fire'; fp.x=m.x; fp.y=m.y; fp.vx=0; fp.vy=1; fp.l=10; fp.maxL=10; fp.r=3; fp.col='#ff9500'; } }
       for(let i=NV.enemies.length-1;i>=0;i--){ const e=NV.enemies[i];
         if(Math.hypot(e.x-m.x,e.y-m.y)<22){ killEnemy(e,i); nvBoom(m.x,m.y,.8,'normal'); keep=false; break; } }
-      if(keep && NV.boss && Math.hypot(NV.boss.x-m.x,NV.boss.y-m.y)<60){ nvBoom(m.x,m.y,.9,'normal'); damageBoss(3,m.x,m.y); keep=false; }
+      if(keep && NV.boss){
+        const bDist = Math.hypot(NV.boss.x - m.x, NV.boss.y - m.y);
+        const nearAc = NV.boss.type === 'ac' && (bDist < 75 || (Math.abs(NV.boss.x - m.x) < 140 && Math.abs(NV.boss.y + 40 - m.y) < 45));
+        const nearFab = NV.boss.type === 'fab' && (bDist < 85 || (Math.abs(NV.boss.x - m.x) < 170 && Math.abs(NV.boss.y + 50 - m.y) < 55));
+        if(nearAc || nearFab){
+          nvBoom(m.x, m.y, .9, 'normal');
+          damageBoss(3, m.x, m.y);
+          keep = false;
+        }
+      }
       if(keep){
         for(let i=NV.asteroids.length-1;i>=0;i--){ const a=NV.asteroids[i];
           if(Math.hypot(a.x-m.x,a.y-m.y)<a.r){ a.hp-=2; nvBoom(m.x,m.y,.7,'rock');
@@ -4755,7 +4877,11 @@ function nvLoop(timestamp){
     if(playing&&!frozen && !p.dead){
       if(B.entering){ B.y+=2.2; if(B.y>=(B.type==='ac'?130:120))B.entering=false; }
       else {
-        B.x+=B.dir*1.1*dm; if(B.x<170||B.x>W-170)B.dir*=-1;
+        if(!B.dir) B.dir = 1;
+        const bMargin = Math.min(130, Math.max(60, W * 0.22));
+        B.x += B.dir * 1.1 * dm;
+        if(B.x < bMargin){ B.x = bMargin; B.dir = Math.abs(B.dir); }
+        else if(B.x > W - bMargin){ B.x = W - bMargin; B.dir = -Math.abs(B.dir); }
         const hpPct=B.core/B.coreMax;
         if(hpPct<.3) B.phase=3; else if(hpPct<.6) B.phase=2; else B.phase=1;
         B.fireCd--;
@@ -4798,7 +4924,7 @@ function nvLoop(timestamp){
           sfx(200,.15,'square',.1);
         }
       }
-      querySpatialGrid(B.x, B.y+40, 180, function(item, type){
+      querySpatialGrid(B.x, B.y+40, 240, function(item, type){
         if(!NV.boss) return true;
         if(type !== 'bullet') return false;
         const b = item;
@@ -4806,11 +4932,11 @@ function nvLoop(timestamp){
         let hit=false;
         if(B.type==='ac'){
           for(let q=0;q<B.plates.length;q++){ const pl=B.plates[q];
-            if(pl.hp>0 && Math.abs(b.x-(B.x+pl.off))<30 && Math.abs(b.y-(B.y+46))<16){
+            if(pl.hp>0 && Math.abs(b.x-(B.x+pl.off))<36 && Math.abs(b.y-(B.y+46))<22){
               pl.hp--; hit=true; sparks(b.x,b.y,5,'#fbbf24');
               if(pl.hp<=0){ nvBoom(B.x+pl.off,B.y+46,1.2,'rock'); NV.freeze=Math.max(NV.freeze,4); addScore(300,true); }
               break; } }
-          if(!hit && !B.plates.some(function(pl){return pl.hp>0;}) && Math.hypot(b.x-B.x,b.y-B.y)<42){
+          if(!hit && !B.plates.some(function(pl){return pl.hp>0;}) && (Math.hypot(b.x-B.x, b.y-(B.y+16))<52 || Math.hypot(b.x-B.x, b.y-B.y)<52)){
             B.core--; hit=true; sparks(b.x,b.y,4,'#0ff');
             if(B.core<=0){ nvBoom(B.x,B.y,2.6,'volatile'); nvDebris(B.x,B.y,6); addScore(2500,true); NV.freeze=8;
               NV.rings.push({x:B.x,y:B.y,r:10,max:280}); NV.boss=null;
@@ -4820,11 +4946,11 @@ function nvLoop(timestamp){
             } }
         } else {
           for(let q=0;q<B.belts.length;q++){ const bl=B.belts[q];
-            if(bl.hp>0 && Math.abs(b.x-(B.x+bl.off))<40 && Math.abs(b.y-(B.y+52))<16){
+            if(bl.hp>0 && Math.abs(b.x-(B.x+bl.off))<48 && Math.abs(b.y-(B.y+52))<24){
               bl.hp--; hit=true; sparks(b.x,b.y,5,'#fbbf24');
               if(bl.hp<=0){ nvBoom(B.x+bl.off,B.y+52,1.4,'rock'); NV.freeze=Math.max(NV.freeze,4); addScore(400,true); }
               break; } }
-          if(!hit && !B.belts.some(function(bl){return bl.hp>0;}) && Math.hypot(b.x-B.x,b.y-B.y)<48){
+          if(!hit && !B.belts.some(function(bl){return bl.hp>0;}) && (Math.hypot(b.x-B.x, b.y-(B.y+20))<56 || Math.hypot(b.x-B.x, b.y-B.y)<56)){
             B.core--; hit=true; sparks(b.x,b.y,4,'#0ff');
             if(B.core<=0){ nvBoom(B.x,B.y,2.8,'volatile'); nvDebris(B.x,B.y,7); addScore(3000,true); NV.freeze=8;
               NV.rings.push({x:B.x,y:B.y,r:10,max:320}); NV.boss=null;
@@ -4896,12 +5022,74 @@ function nvLoop(timestamp){
       nvCtx.restore();
     }
   }
-  function damageBoss(n,x,y){ const B=NV.boss; if(!B)return;
+  function damageBoss(n,x,y){
+    const B=NV.boss; if(!B)return;
     NV.freeze = Math.max(NV.freeze, 2);
-    if(B.type==='ac'){ if(B.plates.some(function(pl){return pl.hp>0;})){ B.plates.forEach(function(pl){ if(pl.hp>0&&Math.abs(B.x+pl.off-x)<34){ pl.hp-=n; if(pl.hp<=0)nvBoom(B.x+pl.off,B.y+46,1.2,'rock'); } }); }
-      else { B.core-=n; if(B.core<=0){ nvBoom(B.x,B.y,2.6,'volatile'); NV.boss=null; addScore(2500,true); document.getElementById('nvBossWrap').classList.remove('show'); if(NV.lives<5){ NV.lives++; renderHearts(); showLifeBonus(); } } } }
-    else { if(B.belts.some(function(bl){return bl.hp>0;})){ B.belts.forEach(function(bl){ if(bl.hp>0&&Math.abs(B.x+bl.off-x)<44){ bl.hp-=n; if(bl.hp<=0)nvBoom(B.x+bl.off,B.y+52,1.3,'rock'); } }); }
-      else { B.core-=n; if(B.core<=0){ nvBoom(B.x,B.y,2.8,'volatile'); NV.boss=null; addScore(3000,true); document.getElementById('nvBossWrap').classList.remove('show'); if(NV.lives<5){ NV.lives++; renderHearts(); showLifeBonus(); } } } }
+    if(B.type==='ac'){
+      const hasPlates = B.plates.some(function(pl){ return pl.hp > 0; });
+      if(hasPlates){
+        let hitPlate = false;
+        B.plates.forEach(function(pl){
+          if(pl.hp > 0 && Math.abs(B.x + pl.off - x) < 50){
+            pl.hp -= n; hitPlate = true;
+            if(pl.hp <= 0) nvBoom(B.x + pl.off, B.y + 46, 1.2, 'rock');
+          }
+        });
+        if(!hitPlate){
+          // Apply to closest living plate so damage is never lost
+          let closest = null, minD = 1e9;
+          B.plates.forEach(function(pl){
+            if(pl.hp > 0){
+              const d = Math.abs(B.x + pl.off - x);
+              if(d < minD){ minD = d; closest = pl; }
+            }
+          });
+          if(closest){
+            closest.hp -= n;
+            if(closest.hp <= 0) nvBoom(B.x + closest.off, B.y + 46, 1.2, 'rock');
+          }
+        }
+      } else {
+        B.core -= n;
+        if(B.core <= 0){
+          nvBoom(B.x, B.y, 2.6, 'volatile'); NV.boss = null; addScore(2500, true);
+          document.getElementById('nvBossWrap').classList.remove('show');
+          if(NV.lives < 5){ NV.lives++; renderHearts(); showLifeBonus(); }
+        }
+      }
+    } else {
+      const hasBelts = B.belts.some(function(bl){ return bl.hp > 0; });
+      if(hasBelts){
+        let hitBelt = false;
+        B.belts.forEach(function(bl){
+          if(bl.hp > 0 && Math.abs(B.x + bl.off - x) < 60){
+            bl.hp -= n; hitBelt = true;
+            if(bl.hp <= 0) nvBoom(B.x + bl.off, B.y + 52, 1.4, 'rock');
+          }
+        });
+        if(!hitBelt){
+          // Apply to closest living belt so damage is never lost
+          let closest = null, minD = 1e9;
+          B.belts.forEach(function(bl){
+            if(bl.hp > 0){
+              const d = Math.abs(B.x + bl.off - x);
+              if(d < minD){ minD = d; closest = bl; }
+            }
+          });
+          if(closest){
+            closest.hp -= n;
+            if(closest.hp <= 0) nvBoom(B.x + closest.off, B.y + 52, 1.4, 'rock');
+          }
+        }
+      } else {
+        B.core -= n;
+        if(B.core <= 0){
+          nvBoom(B.x, B.y, 2.8, 'volatile'); NV.boss = null; addScore(3000, true);
+          document.getElementById('nvBossWrap').classList.remove('show');
+          if(NV.lives < 5){ NV.lives++; renderHearts(); showLifeBonus(); }
+        }
+      }
+    }
   }
 
   let ebw = 0;
@@ -4989,13 +5177,26 @@ function nvLoop(timestamp){
   NV.ebullets.length = ebw;
 
   NV.pows=NV.pows.filter(function(pw){
-    if(playing&&!frozen){ pw.y+=pw.vy;
+    if(pw.life === undefined){ pw.life = 480; pw.maxLife = 480; }
+    if(playing&&!frozen){
+      pw.y+=pw.vy;
+      pw.life--;
       if(NV.magnetT>0){ const dx=p.x-pw.x, dy=p.y-pw.y, dd=Math.hypot(dx,dy);
-        if(dd<220){ pw.x+=dx/dd*5; pw.y+=dy/dd*5; } } }
+        if(dd<220){ pw.x+=dx/dd*5; pw.y+=dy/dd*5; } }
+    }
+    if(pw.life <= 0) return false;
+
     const col= powerUpColor(pw.type);
+    const lifeRatio = Math.max(0, Math.min(1, pw.life / (pw.maxLife || 480)));
+    const isExpiring = pw.life < 150; // less than 2.5s
+    if(isExpiring && Math.floor(NV.t / 4) % 2 === 0){
+      // Blinking when about to expire
+      return pw.y < H + 30;
+    }
+
     const pulse=1+Math.sin(NV.t*.2)*.12;
     const rot = (NV.t * 0.04) % (Math.PI * 2);
-    nvCtx.save(); nvCtx.translate(pw.x,pw.y); nvCtx.scale(pulse*1.45,pulse*1.45);
+    nvCtx.save(); nvCtx.translate(pw.x,pw.y); nvCtx.scale(pulse*1.35,pulse*1.35);
 
     // Glowing halo
     nvCtx.save(); nvCtx.globalCompositeOperation='lighter';
@@ -5003,12 +5204,29 @@ function nvLoop(timestamp){
     g.addColorStop(0, col+'99'); g.addColorStop(1,'rgba(0,0,0,0)');
     nvCtx.fillStyle=g; nvCtx.beginPath(); nvCtx.arc(0,0,32,0,Math.PI*2); nvCtx.fill(); nvCtx.restore();
 
-    // Outer rotating energy orbit rings (Circular design, ~44px)
+    // Outer rotating energy orbit ring
     nvCtx.save(); nvCtx.rotate(rot);
     nvCtx.strokeStyle=col; nvCtx.lineWidth=2;
     nvCtx.beginPath(); nvCtx.arc(0,0,22,0,Math.PI*2); nvCtx.stroke();
     // Orbiting mini spark
     nvCtx.fillStyle='#fff'; nvCtx.beginPath(); nvCtx.arc(22,0,2.5,0,Math.PI*2); nvCtx.fill();
+    nvCtx.restore();
+
+    // Circular Countdown Gauge Ring around token (shows remaining falling time)
+    nvCtx.save();
+    nvCtx.strokeStyle='rgba(255,255,255,0.2)';
+    nvCtx.lineWidth=3.5;
+    nvCtx.beginPath();
+    nvCtx.arc(0, 0, 26, 0, Math.PI*2);
+    nvCtx.stroke();
+
+    const gaugeCol = isExpiring ? '#ff2d55' : col;
+    nvCtx.strokeStyle=gaugeCol;
+    nvCtx.lineWidth=3.5;
+    nvCtx.lineCap='round';
+    nvCtx.beginPath();
+    nvCtx.arc(0, 0, 26, -Math.PI/2, -Math.PI/2 + (Math.PI * 2 * lifeRatio));
+    nvCtx.stroke();
     nvCtx.restore();
 
     // Inner circular disc
@@ -5041,6 +5259,23 @@ function nvLoop(timestamp){
     nvCtx.beginPath();
     nvCtx.arc(0, 0, 19, -Math.PI*0.75, -Math.PI*0.25);
     nvCtx.stroke();
+    nvCtx.restore();
+
+    // Digital time badge directly beneath the falling circular token
+    const secRemain = Math.max(0.1, pw.life / 60).toFixed(1);
+    nvCtx.save();
+    nvCtx.fillStyle='rgba(5,10,20,0.85)';
+    nvCtx.strokeStyle=gaugeCol;
+    nvCtx.lineWidth=1.2;
+    if(nvCtx.roundRect) nvCtx.roundRect(-19, 32, 38, 14, 3);
+    else nvCtx.rect(-19, 32, 38, 14);
+    nvCtx.fill();
+    nvCtx.stroke();
+    nvCtx.fillStyle=isExpiring ? '#ff2d55' : '#ffffff';
+    nvCtx.font='bold 11px monospace';
+    nvCtx.textAlign='center';
+    nvCtx.textBaseline='middle';
+    nvCtx.fillText(secRemain + 's', 0, 40);
     nvCtx.restore();
 
     nvCtx.restore();
@@ -5078,7 +5313,7 @@ function nvLoop(timestamp){
     if(NV.cryoT>0 && NV.t%6===0){ nvCtx.save(); nvCtx.globalAlpha=.15; nvCtx.fillStyle='#00ffff'; nvCtx.fillRect(0,0,W,H); nvCtx.restore(); }
     if(NV.phaseT>0 && NV.t%8===0){ nvCtx.save(); nvCtx.globalAlpha=.2; nvCtx.fillStyle='#ff00ff'; nvCtx.fillRect(0,0,W,H); nvCtx.restore(); }
     document.getElementById('nvScore').textContent=NV.score;
-    if(NV.t%10===0) renderModules();
+    if(NV.t%10===0){ renderModules(); renderActiveBuffs(); }
   }
 
   for(let i=0;i<MAX_PARTS;i++){
