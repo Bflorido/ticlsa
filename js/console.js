@@ -5,7 +5,7 @@
 
 /* ============ UTILIDADES GLOBALES ============ */
 /** Escapa HTML para inyectar texto de usuario de forma segura en innerHTML. */
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){ if(s === null || s === undefined) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/`/g,'&#96;'); }
 /** JSON.parse tolerante a corrupción: devuelve fallback si falla. */
 function safeParse(raw, fallback){ try{ const v = JSON.parse(raw); return v === null ? fallback : v; } catch(e){ return fallback; } }
 
@@ -16,11 +16,11 @@ function ac(){
     try{
       AC=new (window.AudioContext||window.webkitAudioContext)();
       masterComp=AC.createDynamicsCompressor();
-      masterComp.threshold.setValueAtTime(-18, AC.currentTime);
-      masterComp.knee.setValueAtTime(12, AC.currentTime);
-      masterComp.ratio.setValueAtTime(8, AC.currentTime);
-      masterComp.attack.setValueAtTime(0.003, AC.currentTime);
-      masterComp.release.setValueAtTime(0.2, AC.currentTime);
+      masterComp.threshold.setValueAtTime(-14, AC.currentTime);
+      masterComp.knee.setValueAtTime(8, AC.currentTime);
+      masterComp.ratio.setValueAtTime(4.5, AC.currentTime);
+      masterComp.attack.setValueAtTime(0.005, AC.currentTime);
+      masterComp.release.setValueAtTime(0.12, AC.currentTime);
       masterComp.connect(AC.destination);
     }catch(e){}
   }
@@ -78,14 +78,12 @@ document.addEventListener('visibilitychange', function(){
     if(typeof NV !== 'undefined' && NV && NV.state === 'playing'){
       nvTogglePause();
     }
-    const a = ac();
-    if(a && a.state === 'running'){
-      try { a.suspend(); } catch(e){}
+    if(AC && AC.state === 'running'){
+      try { AC.suspend(); } catch(e){}
     }
   } else {
-    const a = ac();
-    if(a && a.state === 'suspended'){
-      try { a.resume(); } catch(e){}
+    if(AC && AC.state === 'suspended'){
+      try { AC.resume(); } catch(e){}
     }
   }
 });
@@ -130,28 +128,58 @@ function laserSfx(){
   bo.onended = function(){ try{ bo.disconnect(); bg.disconnect(); }catch(e){} };
   bo.start(t); bo.stop(t+0.08);
 }
-function explosionSfx(p){ if(!soundOn)return; const a=ac(); if(!a)return; const t=a.currentTime; p=p||1;
+function explosionSfx(p){
+  if(!soundOn) return; const a=ac(); if(!a) return; const t=a.currentTime; p=p||1;
   const src=a.createBufferSource(); src.buffer=noiseBuf();
   const f=a.createBiquadFilter(); f.type='lowpass';
-  f.frequency.setValueAtTime(1300*Math.min(p,1.6),t); f.frequency.exponentialRampToValueAtTime(48,t+.55);
-  const g=a.createGain(); g.gain.setValueAtTime(.5*Math.min(p,1.7),t); g.gain.exponentialRampToValueAtTime(.0001,t+.65);
-  src.connect(f); f.connect(masterNode(a)); src.start(t); src.stop(t+.7); }
-function powerSfx(){ if(!soundOn)return; const a=ac(); if(!a)return; const t=a.currentTime;
-  [523,659,784,1046,1318].forEach(function(f,i){ const o=a.createOscillator(),g=a.createGain(); o.type='square'; o.frequency.value=f;
-    g.gain.setValueAtTime(.0001,t+i*.045); g.gain.linearRampToValueAtTime(.11,t+i*.045+.012); g.gain.exponentialRampToValueAtTime(.0001,t+i*.045+.09);
-    o.connect(g); g.connect(masterNode(a)); o.start(t+i*.045); o.stop(t+i*.045+.1); }); }
-function hitSfx(){ if(!soundOn)return; const a=ac(); if(!a)return; const t=a.currentTime;
+  f.frequency.setValueAtTime(1300*Math.min(p,1.6), t);
+  f.frequency.exponentialRampToValueAtTime(48, t+.55);
+  const g=a.createGain();
+  g.gain.setValueAtTime(.5*Math.min(p,1.7), t);
+  g.gain.exponentialRampToValueAtTime(.0001, t+.65);
+  src.connect(f); f.connect(g); g.connect(masterNode(a));
+  src.onended = function(){ try{ src.disconnect(); f.disconnect(); g.disconnect(); }catch(e){} };
+  src.start(t); src.stop(t+.7);
+}
+function powerSfx(){
+  if(!soundOn) return; const a=ac(); if(!a) return; const t=a.currentTime;
+  [523,659,784,1046,1318].forEach(function(f,i){
+    const o=a.createOscillator(), g=a.createGain();
+    o.type='square'; o.frequency.value=f;
+    g.gain.setValueAtTime(.0001, t+i*.045);
+    g.gain.linearRampToValueAtTime(.11, t+i*.045+.012);
+    g.gain.exponentialRampToValueAtTime(.0001, t+i*.045+.09);
+    o.connect(g); g.connect(masterNode(a));
+    o.onended = function(){ try{ o.disconnect(); g.disconnect(); }catch(e){} };
+    o.start(t+i*.045); o.stop(t+i*.045+.1);
+  });
+}
+function hitSfx(){
+  if(!soundOn) return; const a=ac(); if(!a) return; const t=a.currentTime;
   const src=a.createBufferSource(); src.buffer=noiseBuf();
   const f=a.createBiquadFilter(); f.type='bandpass'; f.frequency.value=420;
-  const g=a.createGain(); g.gain.setValueAtTime(.28,t); g.gain.exponentialRampToValueAtTime(.0001,t+.14);
-  src.connect(f); f.connect(masterNode(a)); src.start(t); src.stop(t+.15); }
+  const g=a.createGain();
+  g.gain.setValueAtTime(.28, t);
+  g.gain.exponentialRampToValueAtTime(.0001, t+.14);
+  src.connect(f); f.connect(g); g.connect(masterNode(a));
+  src.onended = function(){ try{ src.disconnect(); f.disconnect(); g.disconnect(); }catch(e){} };
+  src.start(t); src.stop(t+.15);
+}
 function chargeSfx(){ sfx(1400,.5,'sine',.08); sfx(1800,.5,'sine',.05); }
 function bossSfx(){ sfx(70,.9,'sawtooth',.22); sfx(95,.9,'sawtooth',.16); sfx(50,1.2,'sine',.2); }
-function dashSfx(){ if(!soundOn)return; const a=ac(); if(!a)return; const t=a.currentTime;
+function dashSfx(){
+  if(!soundOn) return; const a=ac(); if(!a) return; const t=a.currentTime;
   const src=a.createBufferSource(); src.buffer=noiseBuf();
-  const f=a.createBiquadFilter(); f.type='highpass'; f.frequency.setValueAtTime(3000,t); f.frequency.exponentialRampToValueAtTime(300,t+.25);
-  const g=a.createGain(); g.gain.setValueAtTime(.2,t); g.gain.exponentialRampToValueAtTime(.0001,t+.25);
-  src.connect(f); f.connect(masterNode(a)); src.start(t); src.stop(t+.26); }
+  const f=a.createBiquadFilter(); f.type='highpass';
+  f.frequency.setValueAtTime(3000, t);
+  f.frequency.exponentialRampToValueAtTime(300, t+.25);
+  const g=a.createGain();
+  g.gain.setValueAtTime(.2, t);
+  g.gain.exponentialRampToValueAtTime(.0001, t+.25);
+  src.connect(f); f.connect(g); g.connect(masterNode(a));
+  src.onended = function(){ try{ src.disconnect(); f.disconnect(); g.disconnect(); }catch(e){} };
+  src.start(t); src.stop(t+.26);
+}
 function bombSfx(){ if(!soundOn)return; const a=ac(); if(!a)return; const t=a.currentTime;
   const o=a.createOscillator(),g=a.createGain(); o.type='sine';
   o.frequency.setValueAtTime(60,t); o.frequency.exponentialRampToValueAtTime(900,t+.5);
@@ -2200,10 +2228,14 @@ function nvStart(){
   NV.orbitals=[]; NV.railgunT=0;
   NV.debris=[]; NV.rings=[]; NV.groups=[];
   NV.roundDropCounts = {}; NV.lastDrops = [];
+  NV.lastDropTick = 0; NV.piperCooldown = 0;
+  NV.tokensCollected = 0; NV._hitsTakenThisRound = 0;
   for(let i=0;i<MAX_PARTS;i++) partsPool[i].active=false;
   for(let i=0;i<MAX_BULLETS;i++) bulletPool[i].active=false;
   for(let i=0;i<MAX_EBULLETS;i++) ebulletPool[i].active=false;
   for(let i=0;i<MAX_MISSILES;i++) missilePool[i].active=false;
+  for(let i=0;i<MAX_DEBRIS;i++) debrisPool[i].active=false;
+  for(let i=0;i<MAX_RINGS;i++) ringsPool[i].active=false;
   NV.player={x:innerWidth/2,y:innerHeight-90,cd:0,inv:0,triple:0,shield:startShield,ax:0,face:1,dashT:0,ghosts:[],dead:false};
   // Explicitly reset the counter to zero every time the game starts or restarts
   document.getElementById('nvScore').textContent='0';
@@ -2325,7 +2357,7 @@ function nextRound(){
   }
 
   const isMob = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (innerWidth < 768) || (innerHeight > innerWidth);
-  NV.squadCd = isMob ? 55 : 80; // breathing room before the next wave arrives
+  NV.squadCd = isMob ? 70 : 80; // breathing room before the next wave arrives
   if(isTouch){
     const tj = document.getElementById('touchJoy');
     const tb = document.getElementById('touchBtns');
@@ -2757,9 +2789,14 @@ function killEnemy(e,idx,givePow){
   const baseDrop = (hasShitcoin ? 0.32 : 0.16) * roundDecay;
   const dropChance = (NV && NV.lives === 1) ? Math.max(baseDrop, 0.22) : baseDrop;
 
-  // Anti-saturation cap: Máximo 4 items simultáneos en pantalla
-  const MAX_POWS_ON_SCREEN = 4;
-  if(givePow!==false && Math.random() < dropChance && NV.pows.length < MAX_POWS_ON_SCREEN){
+  // Anti-saturation cap: Adaptativo (Máximo 3 en móvil, 4 en PC) con Enfriamiento Interno (ICD)
+  const isMobDrop = (typeof isMobile !== 'undefined' && isMobile) || innerWidth < 768;
+  const MAX_POWS_ON_SCREEN = isMobDrop ? 3 : 4;
+  const currentTick = (NV && NV.t) || 0;
+  const timeSinceLastDrop = currentTick - (NV.lastDropTick || 0);
+  const minDropInterval = isMobDrop ? 130 : 100; // ~2.1s en móvil, ~1.6s en PC
+  if(givePow!==false && timeSinceLastDrop >= minDropInterval && Math.random() < dropChance && NV.pows.length < MAX_POWS_ON_SCREEN){
+    NV.lastDropTick = currentTick;
     NV.pows.push({
       x: e.x,
       y: e.y,
@@ -2770,12 +2807,12 @@ function killEnemy(e,idx,givePow){
     });
   }
   NV.enemies.splice(idx,1);
-  // Squad Clear Bonus: if the killed enemy belonged to a group and that group is now empty
+  // Squad Clear Bonus: if the killed enemy belonged to a group and that group is now empty (Zero-GC via .some)
   if(e.g && NV.groups){
     const grp = NV.groups.find(function(gr){ return gr === e.g; });
     if(grp){
-      const remaining = NV.enemies.filter(function(en){ return en.g === grp; });
-      if(remaining.length === 0){
+      const hasRemaining = NV.enemies.some(function(en){ return en.g === grp; });
+      if(!hasRemaining){
         addScore(500, true);
         arcUnlockAchievement('squad_clear');
         sparks(grp.cx || e.x, grp.cy || e.y, 12, '#ffe066');
@@ -2789,54 +2826,93 @@ function killEnemy(e,idx,givePow){
     }
   }
 }
+
+// Pre-allocated static pool for zero-allocation drop calculation (Zero-GC)
+const STATIC_DROP_POOL = [
+  { id: 'piper',  w: 0 },
+  { id: 'circle', w: 0 },
+  { id: 'usdc',   w: 0 },
+  { id: 'E',      w: 0 },
+  { id: '+',      w: 0 },
+  { id: 'Y',      w: 0 },
+  { id: 'P',      w: 0 },
+  { id: 'B',      w: 0 }
+];
+
 function randomPowerUp(){
   // 1. Critical Pity: If user has only 1 life, Core Repair keeps a 30% emergency pity chance
   if(NV && NV.lives === 1 && Math.random() < 0.30) {
     if(!NV.roundDropCounts) NV.roundDropCounts = {};
     NV.roundDropCounts['+'] = (NV.roundDropCounts['+'] || 0) + 1;
+    if(!NV.lastDrops) NV.lastDrops = [];
+    NV.lastDrops.push('+');
+    if(NV.lastDrops.length > 3) NV.lastDrops.shift();
     return '+';
   }
 
   if(!NV.roundDropCounts) NV.roundDropCounts = {};
   if(!NV.lastDrops) NV.lastDrops = [];
 
-  const candidates = [
-    { id: 'piper',  baseWeight: 14 },
-    { id: 'circle', baseWeight: 12 },
-    { id: 'usdc',   baseWeight: 12 },
-    { id: 'E',      baseWeight: 14 },
-    { id: '+',      baseWeight: 10 },
-    { id: 'Y',      baseWeight: 14 },
-    { id: 'P',      baseWeight: 12 },
-    { id: 'B',      baseWeight: 12 }
-  ];
+  const isMob = (typeof isMobile !== 'undefined' && isMobile) || (typeof innerWidth !== 'undefined' && innerWidth < 768);
 
-  // Anti-repeat weighting algorithm:
-  // - Consecutive Drop Penalty: If it dropped immediately on the previous drop, reduce chance by 85%
-  // - Near Streak Penalty: If it dropped 2 drops ago, reduce chance by 50%
-  // - Round Saturation Penalty: Each drop of the same type in this round reduces weight by (1 + count * 1.6)
+  // Elite Rarity Rules for 'piper' ('P' - 5-way sonic symphony):
+  // Rule 1: Very low base weight (5 in mobile, 6 in PC)
+  let piperWeight = isMob ? 5 : 6;
+  // Rule 2: ZERO duplicates while active (strictly 0% if already firing flutes)
+  if(NV && NV.piperSymphonyT > 0){
+    piperWeight = 0;
+  }
+  // Rule 3: 15-second post-buff lockout after expiration
+  else if(NV && NV.piperCooldown > 0){
+    piperWeight = 0;
+  }
+  // Rule 4: Hard-cap of 1 per sector/round
+  else if(NV && (NV.roundDropCounts['piper'] || 0) >= 1){
+    piperWeight = 0;
+  }
+
+  // Base weights table
+  const baseWeights = {
+    piper:  piperWeight,
+    circle: isMob ? 14 : 13,
+    usdc:   isMob ? 15 : 13,
+    E:      12,
+    '+':    isMob ? 12 : 11,
+    Y:      12,
+    P:      12,
+    B:      isMob ? 13 : 12
+  };
+
+  // Zero-GC weighting algorithm (mutates pre-allocated STATIC_DROP_POOL in place)
   let totalWeight = 0;
-  const weighted = candidates.map(function(c){
-    let w = c.baseWeight;
-    const count = NV.roundDropCounts[c.id] || 0;
-    w = w / (1 + count * 1.6);
-    if(NV.lastDrops.length > 0 && NV.lastDrops[NV.lastDrops.length - 1] === c.id){
-      w *= 0.15; // Anti-streak: prevents back-to-back duplicate drops
-    } else if(NV.lastDrops.length > 1 && NV.lastDrops[NV.lastDrops.length - 2] === c.id){
-      w *= 0.50;
-    }
-    totalWeight += w;
-    return { id: c.id, w: w };
-  });
+  const last1 = NV.lastDrops.length > 0 ? NV.lastDrops[NV.lastDrops.length - 1] : null;
+  const last2 = NV.lastDrops.length > 1 ? NV.lastDrops[NV.lastDrops.length - 2] : null;
 
+  for(let i = 0; i < STATIC_DROP_POOL.length; i++){
+    const entry = STATIC_DROP_POOL[i];
+    let w = baseWeights[entry.id] || 0;
+    if(w > 0){
+      const count = NV.roundDropCounts[entry.id] || 0;
+      w = w / (1 + count * 1.6);
+      if(last1 === entry.id){
+        w *= 0.15; // Anti-streak: prevents back-to-back duplicate drops
+      } else if(last2 === entry.id){
+        w *= 0.50;
+      }
+    }
+    entry.w = w;
+    totalWeight += w;
+  }
+
+  if(totalWeight <= 0) totalWeight = 1;
   let roll = Math.random() * totalWeight;
   let chosen = 'circle';
-  for(let i = 0; i < weighted.length; i++){
-    if(roll < weighted[i].w){
-      chosen = weighted[i].id;
+  for(let i = 0; i < STATIC_DROP_POOL.length; i++){
+    if(roll < STATIC_DROP_POOL[i].w){
+      chosen = STATIC_DROP_POOL[i].id;
       break;
     }
-    roll -= weighted[i].w;
+    roll -= STATIC_DROP_POOL[i].w;
   }
 
   // Record drop in round history
@@ -2935,6 +3011,7 @@ function fireMissiles(){
   if(corridorHits >= 3) arcUnlockAchievement('laser_pierce');
   for(let i=NV.asteroids.length-1;i>=0;i--){
     const a=NV.asteroids[i];
+    if(!a) continue;
     if(a.y < p.y && Math.abs(a.x-p.x)<40){
       a.hp-=(isPinguIce?14:10);
       if(a.hp<=0){ if(a.vol)detonateAsteroid(a,i); else { nvBoom(a.x,a.y,1,'rock'); NV.asteroids.splice(i,1); addScore(50); } }
@@ -4034,11 +4111,12 @@ function renderHomePage(){
 function renderSearchResults(query, results){
   const content = document.getElementById('browserContent');
   if(!content) return;
-  let html = '<div class="results-page"><div class="results-header">Results for "'+query+'" — '+results.length+' found</div>';
+  const safeQuery = esc(query);
+  let html = '<div class="results-page"><div class="results-header">Results for "' + safeQuery + '" — ' + results.length + ' found</div>';
   results.forEach(function(r){
-    html += '<div class="result-item"><div class="result-url">'+r.url+'</div><div class="result-title" data-url="'+r.url+'">'+r.title+'</div><div class="result-desc">'+r.desc+'</div></div>';
+    html += '<div class="result-item"><div class="result-url">' + esc(r.url) + '</div><div class="result-title" data-url="' + esc(r.url) + '">' + esc(r.title) + '</div><div class="result-desc">' + esc(r.desc) + '</div></div>';
   });
-  html += '<div class="result-item" style="margin-top:14px;background:rgba(0,212,255,0.05);border:1px solid #3d3d4d;border-radius:8px;padding:10px;"><div class="result-url">arc://network</div><div class="result-title" data-url="arc://network">🌐 More about &quot;'+query+'&quot; on the ARC Network</div><div class="result-desc">ARC Browser keeps everything inside the simulated ARC Network.</div></div>';
+  html += '<div class="result-item" style="margin-top:14px;background:rgba(0,212,255,0.05);border:1px solid #3d3d4d;border-radius:8px;padding:10px;"><div class="result-url">arc://network</div><div class="result-title" data-url="arc://network">🌐 More about &quot;' + safeQuery + '&quot; on the ARC Network</div><div class="result-desc">ARC Browser keeps everything inside the simulated ARC Network.</div></div>';
   html += '</div>';
   content.innerHTML = html;
   content.querySelectorAll('.result-title').forEach(function(el){
@@ -4779,6 +4857,7 @@ function applyPowerUp(t){
   } else if(t==='piper'){
     NV.piperMax = 480;
     NV.piperSymphonyT = 480; // 8.0s sonic symphony
+    NV.piperCooldown = 0;
     showStatus('🎵 PIPER SONIC SYMPHONY');
   } else if(t==='E'){
     arcUnlockAchievement('shield_up');
@@ -5044,7 +5123,14 @@ function nvLoop(timestamp){
     if(NV.overdriveT>0)NV.overdriveT--; if(NV.dronesT>0)NV.dronesT--;
     if(NV.cryoT>0)NV.cryoT--; if(NV.phaseT>0)NV.phaseT--; if(NV.magnetT>0)NV.magnetT--;
     if(NV.empT>0)NV.empT--; if(NV.usdcActive>0)NV.usdcActive--;
-    if(NV.piperSymphonyT>0)NV.piperSymphonyT--; if(NV.chronoT>0)NV.chronoT--;
+    if(NV.piperSymphonyT>0){
+      NV.piperSymphonyT--;
+      if(NV.piperSymphonyT === 0){
+        NV.piperCooldown = 900; // 15-second lockout after expiration
+      }
+    }
+    if(NV.piperCooldown>0) NV.piperCooldown--;
+    if(NV.chronoT>0)NV.chronoT--;
     if(NV.bombCd>0){ NV.bombCd--; if(NV.bombCd===0 && NV.bombs<NV.bombMax){ NV.bombs++; showStatus('💣 BOMB READY'); modReadySfx(); } }
     const K=NV.keys;
     let ax = (K['ArrowRight']||K['d']||K['D']?1:0) - (K['ArrowLeft']||K['a']||K['A']?1:0);
@@ -5069,7 +5155,7 @@ function nvLoop(timestamp){
     const isMobDevice = (typeof isMobile !== 'undefined' && isMobile) || innerWidth <= 768;
     const bottomBound = isMobDevice ? (H - 95) : (H - 55);
     p.x=Math.max(30,Math.min(W-30,p.x)); p.y=Math.max(H*.35,Math.min(bottomBound,p.y));
-    if(p.cd>0)p.cd--; if(p.inv>0)p.inv--; if(p.triple>0)p.triple--; if(p.shield>0)p.shield--;
+    if(p.cd>0)p.cd--; if(p.inv>0)p.inv--; if(p.triple>0)p.triple--;
 
     // Update touch button cooldown states on mobile without per-frame DOM queries
     if(NV.t % 3 === 0){
@@ -5117,12 +5203,24 @@ function nvLoop(timestamp){
         spawnPlayerBullet({x:p.x, y:p.y-36, vy:-14, vx:0, rot:0});
       }
     }
-    // Piper Sonic Symphony auto-barrage (5-way piercing resonant flutes)
-    if(NV.piperSymphonyT>0 && NV.t%5===0){
-      for(let k=-2; k<=2; k++){
-        spawnPlayerBullet({x:p.x+k*12, y:p.y-34, vy:-15, vx:k*2.2, rot:k*0.12, green:true, pierce:2});
+    // Piper Sonic Symphony auto-barrage (Scale-Aware: 3 flautas densas en móvil, 5 en abanico en PC)
+    if(NV.piperSymphonyT>0){
+      const isMobScreen = (typeof isMobile !== 'undefined' && isMobile) || innerWidth <= 768;
+      const cadence = isMobScreen ? 6 : 5;
+      if(NV.t % cadence === 0){
+        if(isMobScreen){
+          // Móvil: Cono estilizado de 3 vías con alta penetración (-50% sobrecarga de balas en pantalla)
+          for(let k=-1; k<=1; k++){
+            spawnPlayerBullet({x:p.x+k*14, y:p.y-34, vy:-16, vx:k*1.6, rot:k*0.08, green:true, pierce:2});
+          }
+        } else {
+          // PC: Abanico completo de 5 vías panorámico
+          for(let k=-2; k<=2; k++){
+            spawnPlayerBullet({x:p.x+k*12, y:p.y-34, vy:-15, vx:k*2.2, rot:k*0.12, green:true, pierce:2});
+          }
+        }
+        pentatonicNoteSfx(NV.symphonyCount++);
       }
-      pentatonicNoteSfx(NV.symphonyCount++);
     }
     // Circle Hyper-Drones (Dual orbital companions)
     if(NV.dronesT>0){
@@ -5159,7 +5257,8 @@ function nvLoop(timestamp){
     if(NV.budget>0){ NV.squadCd--;
       if(NV.squadCd<=0){
         const isMob = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (W < 768) || (H > W);
-        NV.squadCd = isMob ? Math.max(16, Math.floor(46 - NV.round * 2.2)) : Math.max(26, 90 - NV.round * 3);
+        const baseCadence = isMob ? 75 : 85;
+        NV.squadCd = Math.max(30, Math.floor(baseCadence - NV.round * 2.6));
         const size=Math.min(NV.budget, 3+Math.floor(Math.random()*3)+Math.min(Math.floor(NV.round/4),3));
         NV.budget-=size; spawnSquad(); } }
     NV.astCd--;
@@ -5951,6 +6050,7 @@ function nvLoop(timestamp){
 
   for(let i=NV.asteroids.length-1;i>=0;i--){
     const a=NV.asteroids[i];
+    if(!a) continue;
     if(playing&&!frozen){ a.x+=a.vx; a.y+=a.vy; a.rot+=a.vr;
       let astDead = false;
       querySpatialGrid(a.x, a.y, a.r + 16, function(item, type){
@@ -6088,7 +6188,7 @@ function nvLoop(timestamp){
           if(!hit && !B.plates.some(function(pl){return pl.hp>0;}) && (Math.hypot(b.x-B.x, b.y-(B.y+16*bsc))<(52*bsc) || Math.hypot(b.x-B.x, b.y-B.y)<(52*bsc))){
             B.core--; hit=true; sparks(b.x,b.y,4,'#0ff');
             if(B.core<=0){ nvBoom(B.x,B.y,2.6*bsc,'volatile'); nvDebris(B.x,B.y,6); addScore(2500,true); NV.freeze=8;
-              spawnRing(B.x,B.y,10,280*bsc); NV.boss=null;
+              spawnRing(B.x,B.y,10,280*bsc); arcUnlockAchievement('boss_battleship'); NV.boss=null;
               if(cDom && cDom.bossWrap) cDom.bossWrap.classList.remove('show'); sfx(50,1.2,'sawtooth',.3);
               if(NV.lives<5){ NV.lives++; renderHearts(); showLifeBonus(); }
               return true;
@@ -6103,7 +6203,7 @@ function nvLoop(timestamp){
           if(!hit && !B.belts.some(function(bl){return bl.hp>0;}) && (Math.hypot(b.x-B.x, b.y-(B.y+20*bsc))<(56*bsc) || Math.hypot(b.x-B.x, b.y-B.y)<(56*bsc))){
             B.core--; hit=true; sparks(b.x,b.y,4,'#0ff');
             if(B.core<=0){ nvBoom(B.x,B.y,2.8*bsc,'volatile'); nvDebris(B.x,B.y,7); addScore(3000,true); NV.freeze=8;
-              spawnRing(B.x,B.y,10,320*bsc); NV.boss=null;
+              spawnRing(B.x,B.y,10,320*bsc); arcUnlockAchievement('boss_factory'); NV.boss=null;
               if(cDom && cDom.bossWrap) cDom.bossWrap.classList.remove('show'); sfx(45,1.4,'sawtooth',.3);
               if(NV.lives<5){ NV.lives++; renderHearts(); showLifeBonus(); }
               return true;
@@ -6754,7 +6854,7 @@ document.querySelectorAll('.tbtn').forEach(function(btn){
     btn.classList.add('active');
     HapticEngine.trigger('tap');
     setTimeout(function(){ btn.classList.remove('active'); }, 120);
-    if(a === 'dash') doDash();
+    if(a === 'dash'){ if(NV.dashCd > 0) NV.dashBuffer = 6; else doDash(); }
     else if(a === 'mis') fireMissiles();
     else if(a === 'las') firePierce();
     else if(a === 'bmb') useBomb();

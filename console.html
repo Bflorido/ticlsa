@@ -36,7 +36,7 @@
 
 <div class="wallpaper" id="wallpaper"></div>
 
-<div class="desktop">
+<div class="desktop" id="desktop">
   <div class="dicons">
     <div class="dicon" onclick="handleDiconClick(this,'computer',event)" ondblclick="launchApp('computer')"><span class="ico">💻</span><span class="lbl">My Computer</span></div>
     <div class="dicon" onclick="handleDiconClick(this,'virus',event)" ondblclick="launchApp('virus')"><span class="ico">🛡️</span><span class="lbl">Antivirus ARC.exe</span></div>
@@ -972,6 +972,7 @@ Signed: The ARC AI.</div>
     <input type="text" class="arc-cmd-input" id="arcCmdInput" placeholder="Type a command or search... (e.g. swap, meme, scan, naves)" oninput="filterArcCmd(this.value)" autocomplete="off" spellcheck="false">
     <div class="arc-cmd-list" id="arcCmdList"></div>
   </div>
+</div>
 <!-- NON-INVASIVE HUD ACHIEVEMENT TOAST -->
 <div id="arcAchieveToast" class="arc-achieve-toast" style="display:none;">
   <div class="ach-glow-bar"></div>

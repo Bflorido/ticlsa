@@ -1224,7 +1224,7 @@
      ========================================================================== */
   .arc-achieve-toast {
     position: fixed;
-    top: 24px;
+    bottom: 52px;
     right: 24px;
     z-index: 999999;
     display: flex;
@@ -1375,6 +1375,24 @@
     color: #2e7d32;
     margin-top: 2px;
     font-weight: bold;
+  }
+  /* Sci-fi arcade styling for achievement cards when displayed inside ships.exe */
+  .nv-layer .ach-card {
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(0, 212, 255, 0.28);
+    color: #cbd5e1;
+    backdrop-filter: blur(8px);
+  }
+  .nv-layer .ach-card.unlocked {
+    background: rgba(15, 30, 60, 0.95);
+    border-color: #fbbf24;
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.35);
+  }
+  .nv-layer .ach-card.unlocked .ach-card-title {
+    color: #fbbf24;
+  }
+  .nv-layer .ach-card-desc {
+    color: #94a3b8;
   }
 
   /* ==========================================================================
