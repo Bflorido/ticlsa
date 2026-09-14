@@ -1,4 +1,4 @@
-# Auditoría de ARCSYSTEMS XP / VirusARC
+# Auditoría de ARCSYSTEMS XP
 *Alcance: todo el proyecto (`console.html`, `css/console.css`, `js/console.js`, `api/*.php|js`, `index.html`). Modos ejecutados: código, CSS, seguridad, juego, documentación.*
 
 ## Resumen

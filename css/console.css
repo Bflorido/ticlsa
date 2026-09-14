@@ -338,9 +338,9 @@
   #pbCanvas { background:#05010f; border:1px solid #404040; display:block; margin:0 auto; }
 
   /* NAVES v4.2 */
-  #navesGame { position:fixed; inset:0; width:100vw; height:100dvh; z-index:4600; display:none; background:#000; touch-action:none !important; overflow:hidden; }
+  #navesGame { position:fixed; inset:0; width:100vw; height:100dvh; z-index:4600; display:none; background:#000; touch-action:none !important; overflow:hidden; overscroll-behavior:none !important; user-select:none !important; -webkit-user-select:none !important; -webkit-touch-callout:none !important; -webkit-tap-highlight-color:transparent !important; }
   #navesGame.show { display:block; }
-  #nvCanvas { position:absolute; inset:0; width:100%; height:100%; display:block; image-rendering:auto; will-change:transform; }
+  #nvCanvas { position:absolute; inset:0; width:100%; height:100%; display:block; image-rendering:auto; will-change:transform; touch-action:none !important; user-select:none !important; -webkit-user-select:none !important; -webkit-touch-callout:none !important; }
   .nv-layer { position:absolute; inset:0; z-index:50; display:none; align-items:center; justify-content:flex-start; flex-direction:column; gap:14px; text-align:center; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:24px 12px 60px; box-sizing:border-box; }
   .nv-layer.show { display:flex; }
   .nv-layer::before, .nv-layer::after { content:''; margin:auto; }
@@ -440,14 +440,14 @@
   .hud-buff-item.expiring { animation:buffBlink 0.4s infinite alternate; }
   @keyframes buffBlink { from { opacity: 1; } to { opacity: 0.35; } }
 
-  .touch-zone { position:absolute; z-index:20; display:none; pointer-events:auto; touch-action:none; }
-  #touchJoy { position:absolute; top:0; left:0; width:55vw; height:100%; z-index:25; display:none; pointer-events:auto; touch-action:none; }
+  .touch-zone { position:absolute; z-index:20; display:none; pointer-events:auto; touch-action:none !important; user-select:none !important; -webkit-user-select:none !important; -webkit-touch-callout:none !important; }
+  #touchJoy { position:absolute; top:0; left:0; width:55vw; height:100%; z-index:25; display:none; pointer-events:auto; touch-action:none !important; user-select:none !important; -webkit-user-select:none !important; -webkit-touch-callout:none !important; }
   #touchJoy.show, #touchBtns.show { display:block; }
-  .joy-base { position:absolute; left:calc(70px + env(safe-area-inset-left, 0px)); bottom:calc(70px + env(safe-area-inset-bottom, 0px)); width:134px; height:134px; border-radius:50%; background:radial-gradient(circle, rgba(0,212,255,.08) 0%, rgba(0,212,255,.22) 100%); border:2.5px solid rgba(0,212,255,.5); box-shadow:0 0 18px rgba(0,212,255,.28); touch-action:none; pointer-events:none; opacity:0.45; transform:translate(-50%,-50%) scale(0.92); transition:opacity .18s ease-out, transform .18s cubic-bezier(0.18, 0.89, 0.32, 1.28); will-change:transform, left, top; }
+  .joy-base { position:absolute; left:calc(70px + env(safe-area-inset-left, 0px)); bottom:calc(70px + env(safe-area-inset-bottom, 0px)); width:134px; height:134px; border-radius:50%; background:radial-gradient(circle, rgba(0,212,255,.08) 0%, rgba(0,212,255,.22) 100%); border:2.5px solid rgba(0,212,255,.5); box-shadow:0 0 18px rgba(0,212,255,.28); touch-action:none !important; pointer-events:none; opacity:0.45; transform:translate(-50%,-50%) scale(0.92); transition:opacity .18s ease-out, transform .18s cubic-bezier(0.18, 0.89, 0.32, 1.28); will-change:transform, left, top; user-select:none !important; -webkit-user-select:none !important; -webkit-touch-callout:none !important; }
   .joy-base.active { opacity:1; transform:translate(-50%,-50%) scale(1.05); border-color:#00d4ff; box-shadow:0 0 24px rgba(0,212,255,.55); }
-  .joy-stick { position:absolute; width:54px; height:54px; border-radius:50%; background:radial-gradient(circle, #00d4ff 0%, #0088cc 100%); border:2.5px solid #ffffff; left:50%; top:50%; transform:translate(-50%,-50%); box-shadow:0 0 14px #00d4ff, inset 0 2px 4px rgba(255,255,255,.8); pointer-events:none; will-change:transform; }
-  #touchBtns { position:absolute; right:calc(8px + env(safe-area-inset-right, 0px)); bottom:calc(10px + env(safe-area-inset-bottom, 0px)); width:210px; height:210px; pointer-events:none; z-index:30; touch-action:none; }
-  .tbtn { position:absolute; border-radius:50%; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,.75); transition:transform .08s, filter .12s, opacity .2s; user-select:none; -webkit-user-select:none; touch-action:none; pointer-events:auto; }
+  .joy-stick { position:absolute; width:54px; height:54px; border-radius:50%; background:radial-gradient(circle, #00d4ff 0%, #0088cc 100%); border:2.5px solid #ffffff; left:50%; top:50%; transform:translate(-50%,-50%); box-shadow:0 0 14px #00d4ff, inset 0 2px 4px rgba(255,255,255,.8); pointer-events:none; will-change:transform; touch-action:none !important; user-select:none !important; -webkit-user-select:none !important; -webkit-touch-callout:none !important; }
+  #touchBtns { position:absolute; right:calc(8px + env(safe-area-inset-right, 0px)); bottom:calc(10px + env(safe-area-inset-bottom, 0px)); width:210px; height:210px; pointer-events:none; z-index:30; touch-action:none !important; user-select:none !important; -webkit-user-select:none !important; -webkit-touch-callout:none !important; }
+  .tbtn { position:absolute; border-radius:50%; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,.75); transition:transform .08s, filter .12s, opacity .2s; user-select:none !important; -webkit-user-select:none !important; -webkit-touch-callout:none !important; touch-action:none !important; pointer-events:auto; -webkit-tap-highlight-color:transparent !important; }
   .tbtn:active, .tbtn.active { transform:scale(.90) !important; filter:brightness(1.28); }
   .tbtn.cooldown { opacity:0.45; filter:grayscale(0.6); }
   .tbtn .tb-ico { font-size:24px; line-height:1; pointer-events:none; }

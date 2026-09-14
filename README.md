@@ -1,4 +1,4 @@
-# ⚡ ARCSYSTEMS — Ecosistema VirusARC
+# ⚡ ARCSYSTEMS — Ecosistema Retro XP
 
 Parodia de Windows XP + juego arcade espacial (**STARSHIP ARC: VIRUS HUNTERS**) + navegador simulado, todo como marketing del token **$VARC** en la **ARC Network** (piper.meme).
 
