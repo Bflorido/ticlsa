@@ -88,10 +88,10 @@ function checkWeeklyEpoch($weeklyEpochFile, $weeklyFile, $WEEK_MS) {
     return $epoch;
 }
 
-function deduplicateAndRank($list) {
-    $clean = is_array($list) ? $list : [];
+function deduplicateAndRank($list, $limit = 100) {
+    if (!is_array($list)) return [];
     $map = [];
-    foreach ($clean as $item) {
+    foreach ($list as $item) {
         if (!isset($item['name']) || !isset($item['score'])) continue;
         $name = strtoupper(trim((string)$item['name']));
         $score = (int)$item['score'];
@@ -113,13 +113,13 @@ function deduplicateAndRank($list) {
         }
         return $b['round'] - $a['round'];
     });
-    return array_slice($unique, 0, 10);
+    return array_slice($unique, 0, $limit !== null ? $limit : 100);
 }
 
-function updateOrInsert($list, $newEntry) {
+function updateOrInsert($list, $newEntry, $limit = 100) {
     $clean = is_array($list) ? $list : [];
     $clean[] = $newEntry;
-    return deduplicateAndRank($clean);
+    return deduplicateAndRank($clean, $limit);
 }
 
 function clientIp() {
@@ -158,13 +158,61 @@ function checkRateLimit($rateFile, $nonce, $MIN_POST_GAP_MS, $MAX_POSTS_PER_DAY)
     return null;
 }
 
+$dbConfig = file_exists(__DIR__ . '/db_config.php') ? include(__DIR__ . '/db_config.php') : [];
+function getDbConnection($cfg) {
+    if (empty($cfg['DB_ENABLED'])) return null;
+    try {
+        $host = isset($cfg['DB_HOST']) ? $cfg['DB_HOST'] : 'localhost';
+        $port = isset($cfg['DB_PORT']) ? $cfg['DB_PORT'] : '3306';
+        $name = isset($cfg['DB_NAME']) ? $cfg['DB_NAME'] : '';
+        $user = isset($cfg['DB_USER']) ? $cfg['DB_USER'] : '';
+        $pass = isset($cfg['DB_PASS']) ? $cfg['DB_PASS'] : '';
+        $charset = isset($cfg['DB_CHARSET']) ? $cfg['DB_CHARSET'] : 'utf8mb4';
+        $dsn = "mysql:host={$host};port={$port};dbname={$name};charset={$charset}";
+        $opt = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ];
+        return new PDO($dsn, $user, $pass, $opt);
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+$pdo = getDbConnection($dbConfig);
+
 checkWeeklyEpoch($weeklyEpochFile, $weeklyFile, $WEEK_MS);
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if ($pdo) {
+        try {
+            $stmtAll = $pdo->query("SELECT name, wallet, score, round, date FROM leaderboard_alltime ORDER BY score DESC, round DESC LIMIT 50");
+            $allTime = $stmtAll->fetchAll();
+
+            $currentEpoch = loadJson($weeklyEpochFile);
+            $epochVal = is_numeric($currentEpoch) ? (int)$currentEpoch : 0;
+            $stmtWk = $pdo->prepare("SELECT name, wallet, score, round, date FROM leaderboard_weekly WHERE week_epoch >= ? ORDER BY score DESC, round DESC LIMIT 100");
+            $stmtWk->execute([$epochVal]);
+            $weekly = $stmtWk->fetchAll();
+
+            echo json_encode([
+                'success' => true,
+                'source'  => 'database',
+                'allTime' => $allTime,
+                'weekly'  => $weekly
+            ]);
+            exit;
+        } catch (Exception $e) {
+            // DB query fail: fallback to json
+        }
+    }
+
     $allTime = loadJson($allTimeFile);
     $weekly = loadJson($weeklyFile);
     echo json_encode([
         'success' => true,
+        'source'  => 'local',
         'allTime' => $allTime,
         'weekly' => $weekly
     ]);
@@ -253,23 +301,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($pdo) {
+        try {
+            // Save to All-Time in DB (Insert or Update if higher)
+            $sqlAll = "INSERT INTO leaderboard_alltime (name, wallet, score, round, date) 
+                       VALUES (:name, :wallet, :score, :round, :date)
+                       ON DUPLICATE KEY UPDATE 
+                       wallet = VALUES(wallet),
+                       score = IF(VALUES(score) > score, VALUES(score), score),
+                       round = IF(VALUES(score) > score, VALUES(round), round),
+                       date = IF(VALUES(score) > score, VALUES(date), date)";
+            $stmtA = $pdo->prepare($sqlAll);
+            $stmtA->execute([
+                ':name'   => $name,
+                ':wallet' => $wallet,
+                ':score'  => $score,
+                ':round'  => $round,
+                ':date'   => $date
+            ]);
+
+            // Save to Weekly in DB (Insert or Update if higher for current epoch)
+            $currentEpoch = loadJson($weeklyEpochFile);
+            $epochVal = is_numeric($currentEpoch) ? (int)$currentEpoch : 0;
+            $sqlWk = "INSERT INTO leaderboard_weekly (week_epoch, name, wallet, score, round, date)
+                      VALUES (:epoch, :name, :wallet, :score, :round, :date)
+                      ON DUPLICATE KEY UPDATE
+                      wallet = VALUES(wallet),
+                      score = IF(VALUES(score) > score, VALUES(score), score),
+                      round = IF(VALUES(score) > score, VALUES(round), round),
+                      date = IF(VALUES(score) > score, VALUES(date), date)";
+            $stmtW = $pdo->prepare($sqlWk);
+            $stmtW->execute([
+                ':epoch'  => $epochVal,
+                ':name'   => $name,
+                ':wallet' => $wallet,
+                ':score'  => $score,
+                ':round'  => $round,
+                ':date'   => $date
+            ]);
+        } catch (Exception $e) {
+            // Log or ignore DB error and fallback to file storage
+        }
+    }
+
     $allTime = loadJson($allTimeFile);
-    $allTime = updateOrInsert($allTime, $sanitized);
+    $allTime = updateOrInsert($allTime, $sanitized, 50);
     $s1 = saveJson($allTimeFile, $allTime);
 
     $weekly = loadJson($weeklyFile);
-    $weekly = updateOrInsert($weekly, $sanitized);
+    $weekly = updateOrInsert($weekly, $sanitized, 100);
     $s2 = saveJson($weeklyFile, $weekly);
-
-    if (!$s1 || !$s2) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Storage permission error: could not write to data/ directory. Ensure data/ has write permissions (chmod 777).']);
-        exit;
-    }
 
     echo json_encode([
         'success' => true,
         'message' => 'Record recorded successfully',
+        'source'  => $pdo ? 'database' : 'local',
         'allTime' => $allTime,
         'weekly' => $weekly
     ]);

@@ -464,7 +464,7 @@ function popupsSuppressed(){
   return (b && b.style.display!=='none') || (n && n.classList.contains('show'));
 }
 function spawnPopup(){ if(scanning)return; if(popupsSuppressed())return;
-  if(document.querySelectorAll('.popup').length>=5)return;
+  if(document.querySelectorAll('.popup').length>=2)return; // Reduced from 5 to 2 max
   const d=popData[Math.floor(Math.random()*popData.length)],el=document.createElement('div');
   el.className='popup'; el.style.zIndex=500+(popCount++%40);
   el.style.left=(60+Math.random()*(innerWidth-440))+'px'; el.style.top=(40+Math.random()*(innerHeight-340))+'px';
@@ -477,14 +477,14 @@ function spawnPopup(){ if(scanning)return; if(popupsSuppressed())return;
     function mv(ev){ el.style.left=(ev.clientX-ox)+'px'; el.style.top=(ev.clientY-oy)+'px'; }
     function up(){ removeEventListener('mousemove',mv); removeEventListener('mouseup',up); }
     addEventListener('mousemove',mv); addEventListener('mouseup',up); }); }
-function popAccept(b){ b.closest('.popup').remove(); if(Math.random()>.5){spawnPopup();spawnPopup();} }
-function popIgnore(b){ b.closest('.popup').remove(); spawnPopup(); }
+function popAccept(b){ b.closest('.popup').remove(); if(Math.random()>.8){spawnPopup();} }
+function popIgnore(b){ b.closest('.popup').remove(); }
 setInterval(function(){
-  if(Math.random()>.30){ // ~70% cada 2.2s — la máquina está realmente infectada
+  // Drastically reduced frequency: check every 20s with 25% chance
+  if(Math.random() < 0.25){
     spawnPopup();
-    if(Math.random()>.6) setTimeout(spawnPopup, 600); // ráfagas
   }
-},2200);
+}, 20000);
 // Ambient simulated network notifications (keeps the OS feeling alive, never spammy)
 const AMBIENT_MSGS=['🌐 ARC Network: 1,000,000+ nodes online','📦 New block synced — height #6,660,042','🛰️ Node handshake OK (12ms)',
   '🔒 Encrypted channel to piper.meme renewed','🧠 ARC AI: model refresh complete','💾 Auto-save: meme cache defragmented'];
@@ -2183,8 +2183,9 @@ function getWeeklyData(){
 }
 
 // Bulletproof Deduplication: Guarantees strictly ONE record per pilot name, keeping only their highest score
-function deduplicateAndRank(list){
+function deduplicateAndRank(list, maxLimit){
   if(!Array.isArray(list)) return [];
+  const limit = typeof maxLimit === 'number' ? maxLimit : 100;
   const map = new Map();
   for(let i = 0; i < list.length; i++){
     const entry = list[i];
@@ -2212,7 +2213,7 @@ function deduplicateAndRank(list){
   unique.sort(function(a, b){
     return b.score - a.score || b.round - a.round;
   });
-  return unique.slice(0, 10);
+  return unique.slice(0, limit);
 }
 
 function getWeeklyData(){
@@ -2223,7 +2224,7 @@ function getWeeklyData(){
     const parsed = JSON.parse(d);
     if(!Array.isArray(parsed)) return [];
     const valid = parsed.filter(function(e){ return verifyRecordIntegrity(e); });
-    const clean = deduplicateAndRank(valid);
+    const clean = deduplicateAndRank(valid, 100);
     if(clean.length !== parsed.length){
       saveWeeklyData(clean);
     }
@@ -2232,7 +2233,7 @@ function getWeeklyData(){
 }
 
 function saveWeeklyData(data){
-  const clean = deduplicateAndRank(data);
+  const clean = deduplicateAndRank(data, 100); // Store up to 100 weekly records
   localStorage.setItem('arc_weekly_leaderboard', JSON.stringify(clean));
 }
 
@@ -2243,7 +2244,7 @@ function getAllTimeData(){
     const parsed = JSON.parse(d);
     if(!Array.isArray(parsed)) return [];
     const valid = parsed.filter(function(e){ return verifyRecordIntegrity(e); });
-    const clean = deduplicateAndRank(valid);
+    const clean = deduplicateAndRank(valid, 50);
     if(clean.length !== parsed.length){
       saveAllTimeData(clean);
     }
@@ -2252,7 +2253,7 @@ function getAllTimeData(){
 }
 
 function saveAllTimeData(data){
-  const clean = deduplicateAndRank(data);
+  const clean = deduplicateAndRank(data, 50); // Store up to 50 all-time records
   localStorage.setItem('arc_alltime_records', JSON.stringify(clean));
 }
 
@@ -2439,7 +2440,8 @@ function saveLeaderboard(auto){
 
 function renderLeaderboard(highlight){
   const isWeekly = (NV.activeTab || 'weekly') === 'weekly';
-  const lb = isWeekly ? getWeeklyData() : getAllTimeData();
+  const fullLb = isWeekly ? getWeeklyData() : getAllTimeData();
+  const lb = fullLb.slice(0, 10); // Strictly Top 10 in the game's modal
   const body=document.getElementById('lbBody');
   if(!body) return;
   body.innerHTML='';
@@ -3190,36 +3192,91 @@ function renderSearchResults(query, results){
 }
 
 /* ---------- ARC PAGE RENDERERS ---------- */
-function renderLeaderboardPage(){
-  const alltime = safeParse(localStorage.getItem('arc_alltime_records'), []);
-  const weekly = safeParse(localStorage.getItem('arc_weekly_leaderboard'), []);
-  let html = '<div class="fake-page"><div class="hero-img" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);">🏆</div>';
-  html += '<h1>ARC Top Pilots</h1>';
-  html += '<p style="color:#94a3b8;font-family:Inter,sans-serif;font-size:13px;margin-bottom:18px;">Permanent Hall of Fame records. Each pilot occupies at most one spot.</p>';
-  html += '<h2 style="color:#fbbf24;font-size:18px;font-family:VT323,monospace;letter-spacing:2px;margin-bottom:8px;">🏅 ALL-TIME RECORDS</h2>';
-  if(alltime.length === 0){
-    html += '<p style="color:#64748b;">No records yet. Play ships.exe and make history!</p>';
-  } else {
-    html += '<table style="width:100%;border-collapse:collapse;font-family:VT323,monospace;font-size:17px;">';
-    html += '<tr><th style="color:#00d4ff;text-align:left;padding:6px 8px;border-bottom:2px solid #00d4ff;">#</th><th style="color:#00d4ff;text-align:left;padding:6px 8px;border-bottom:2px solid #00d4ff;">Pilot</th><th style="color:#00d4ff;text-align:right;padding:6px 8px;border-bottom:2px solid #00d4ff;">Score</th><th style="color:#00d4ff;text-align:center;padding:6px 8px;border-bottom:2px solid #00d4ff;">Sector</th></tr>';
-    alltime.forEach(function(r, i){
-      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
-      const shortW = r.wallet && r.wallet.length >= 10 ? (' <span style="font-size:11px;color:#38bdf8;font-family:monospace;" title="'+esc(r.wallet)+'">('+esc(r.wallet.slice(0,6)+'...'+r.wallet.slice(-4))+')</span>') : '';
-      html += '<tr style="border-bottom:1px solid rgba(0,212,255,0.12);"><td style="padding:5px 8px;color:#fbbf24;">'+(i+1)+medal+'</td><td style="padding:5px 8px;color:#e2e8f0;">'+esc(r.name)+shortW+'</td><td style="padding:5px 8px;text-align:right;color:#7cbb00;">'+r.score.toLocaleString()+'</td><td style="padding:5px 8px;text-align:center;color:#9fd4ff;">'+(r.round||'-')+'</td></tr>';
-    });
-    html += '</table>';
+let lbSearchTerm = '';
+let lbBrowserTab = 'weekly'; // 'weekly' or 'alltime'
+
+function setLbBrowserTab(tab){
+  lbBrowserTab = tab;
+  const c = document.getElementById('browserContent');
+  if(c) c.innerHTML = renderLeaderboardPage();
+}
+
+function filterLbBrowser(term){
+  lbSearchTerm = (term||'').trim().toLowerCase();
+  const c = document.getElementById('browserContent');
+  if(c) c.innerHTML = renderLeaderboardPage();
+  const inp = document.getElementById('lbBrowserSearch');
+  if(inp){
+    inp.focus();
+    inp.value = term;
   }
-  html += '<h2 style="color:#fbbf24;font-size:18px;font-family:VT323,monospace;letter-spacing:2px;margin:22px 0 8px;">📅 WEEKLY RECORDS</h2>';
-  if(weekly.length === 0){
-    html += '<p style="color:#64748b;">No weekly records yet.</p>';
+}
+
+function renderLeaderboardPage(){
+  const alltime = getAllTimeData().slice(0, 50); // Up to 50 all-time
+  const weekly = getWeeklyData().slice(0, 100);  // Up to 100 weekly (7 days)
+
+  const isWk = lbBrowserTab === 'weekly';
+  const sourceList = isWk ? weekly : alltime;
+  const filtered = lbSearchTerm
+    ? sourceList.filter(function(r){
+        return (r.name && r.name.toLowerCase().includes(lbSearchTerm)) ||
+               (r.wallet && r.wallet.toLowerCase().includes(lbSearchTerm));
+      })
+    : sourceList;
+
+  let html = '<div class="fake-page" style="max-width:850px; margin:0 auto; padding-bottom:40px;">';
+  html += '<div class="hero-img" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);">🏆</div>';
+  html += '<h1 style="font-size:26px; font-weight:800; margin-bottom:4px;">ARC Global Leaderboard</h1>';
+  html += '<p style="color:#94a3b8;font-family:Inter,sans-serif;font-size:13px;margin-bottom:16px;">Verified on-chain pilots and scores. Weekly records reset every 7 days; All-Time records remain forever in the Hall of Fame.</p>';
+
+  // Tabs + Live Search Header
+  html += '<div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:18px; background:rgba(37,37,53,0.8); padding:10px 14px; border-radius:12px; border:1px solid #3d3d4d;">';
+  html += '  <div style="display:flex; gap:8px;">';
+  html += '    <button class="btn98 ' + (isWk ? 'green' : '') + '" style="padding:6px 14px; font-size:12px; font-weight:700;" onclick="setLbBrowserTab(\'weekly\')">📅 7-DAY WEEKLY (TOP 100)</button>';
+  html += '    <button class="btn98 ' + (!isWk ? 'green' : '') + '" style="padding:6px 14px; font-size:12px; font-weight:700;" onclick="setLbBrowserTab(\'alltime\')">🏅 ALL-TIME HALL OF FAME (TOP 50)</button>';
+  html += '  </div>';
+  html += '  <div style="display:flex; align-items:center; background:#1e1e2d; border:1px solid #4a4a5e; border-radius:8px; padding:4px 10px; min-width:220px;">';
+  html += '    <span style="font-size:13px; color:#94a3b8; margin-right:6px;">🔍</span>';
+  html += '    <input type="text" id="lbBrowserSearch" placeholder="Search pilot or 0x..." value="' + esc(lbSearchTerm) + '" oninput="filterLbBrowser(this.value)" style="background:none; border:none; color:#fff; font-size:12px; outline:none; width:100%;">';
+  html += '  </div>';
+  html += '</div>';
+
+  html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; color:#94a3b8; font-size:12px; font-family:Inter,sans-serif;">';
+  html += '  <span>Showing <b>' + filtered.length + '</b> of ' + sourceList.length + ' registered pilots ' + (isWk ? '(Max 100)' : '(Max 50)') + '</span>';
+  html += '  <span style="color:#00d4ff; font-family:monospace;">● LIVE SYNC ACTIVE</span>';
+  html += '</div>';
+
+  if(filtered.length === 0){
+    html += '<div style="text-align:center; padding:40px 20px; background:#1e1e2e; border:1px dashed #3d3d4d; border-radius:12px; color:#94a3b8; font-family:Inter,sans-serif;">';
+    html += '  <div style="font-size:32px; margin-bottom:8px;">' + (lbSearchTerm ? '🔎' : '🚀') + '</div>';
+    html += '  <div style="font-size:15px; font-weight:600; color:#e2e8f0;">' + (lbSearchTerm ? 'No pilots found matching "' + esc(lbSearchTerm) + '"' : 'No records yet in this category.') + '</div>';
+    html += '  <div style="font-size:12px; margin-top:4px;">Launch <b>ships.exe</b> and be the first to claim a rank!</div>';
+    html += '</div>';
   } else {
-    html += '<table style="width:100%;border-collapse:collapse;font-family:VT323,monospace;font-size:17px;">';
-    html += '<tr><th style="color:#00d4ff;text-align:left;padding:6px 8px;border-bottom:2px solid #00d4ff;">#</th><th style="color:#00d4ff;text-align:left;padding:6px 8px;border-bottom:2px solid #00d4ff;">Pilot</th><th style="color:#00d4ff;text-align:right;padding:6px 8px;border-bottom:2px solid #00d4ff;">Score</th></tr>';
-    weekly.forEach(function(r, i){
-      const shortW = r.wallet && r.wallet.length >= 10 ? (' <span style="font-size:11px;color:#38bdf8;font-family:monospace;" title="'+esc(r.wallet)+'">('+esc(r.wallet.slice(0,6)+'...'+r.wallet.slice(-4))+')</span>') : '';
-      html += '<tr style="border-bottom:1px solid rgba(0,212,255,0.12);"><td style="padding:5px 8px;color:#fbbf24;">'+(i+1)+'</td><td style="padding:5px 8px;color:#e2e8f0;">'+esc(r.name)+shortW+'</td><td style="padding:5px 8px;text-align:right;color:#7cbb00;">'+r.score.toLocaleString()+'</td></tr>';
+    html += '<div style="background:#1a1a27; border:1px solid #2d2d3e; border-radius:12px; overflow:hidden;">';
+    html += '<table style="width:100%; border-collapse:collapse; font-family:VT323,monospace; font-size:18px;">';
+    html += '<thead><tr style="background:#242436; border-bottom:2px solid #00d4ff;">';
+    html += '  <th style="color:#00d4ff; text-align:left; padding:8px 12px; width:50px;">#</th>';
+    html += '  <th style="color:#00d4ff; text-align:left; padding:8px 12px;">Pilot & EVM Wallet</th>';
+    html += '  <th style="color:#00d4ff; text-align:right; padding:8px 12px;">Score</th>';
+    html += '  <th style="color:#00d4ff; text-align:center; padding:8px 12px; width:80px;">Sector</th>';
+    html += '  <th style="color:#00d4ff; text-align:right; padding:8px 12px; width:110px;">Date</th>';
+    html += '</tr></thead><tbody>';
+
+    filtered.forEach(function(r, i){
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      const shortW = r.wallet && r.wallet.length >= 10 ? (' <span style="font-size:11px;color:#38bdf8;font-family:monospace;letter-spacing:0;" title="'+esc(r.wallet)+'">('+esc(r.wallet.slice(0,6)+'...'+r.wallet.slice(-4))+')</span>') : '';
+      const rowBg = i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
+      html += '<tr style="border-bottom:1px solid rgba(0,212,255,0.08); background:'+rowBg+';">';
+      html += '  <td style="padding:7px 12px; color:#fbbf24; font-weight:bold;">' + (i+1) + medal + '</td>';
+      html += '  <td style="padding:7px 12px; color:#f1f5f9;"><b>' + esc(r.name) + '</b>' + shortW + '</td>';
+      html += '  <td style="padding:7px 12px; text-align:right; color:#7cbb00; font-size:20px; font-weight:bold;">' + r.score.toLocaleString() + '</td>';
+      html += '  <td style="padding:7px 12px; text-align:center; color:#9fd4ff;">' + (r.round || 1) + '</td>';
+      html += '  <td style="padding:7px 12px; text-align:right; color:#64748b; font-size:14px;">' + esc(r.date || '') + '</td>';
+      html += '</tr>';
     });
-    html += '</table>';
+    html += '</tbody></table></div>';
   }
   html += '</div>';
   return html;

@@ -83,8 +83,9 @@ function checkWeeklyEpoch() {
   return epoch;
 }
 
-function deduplicateAndRank(list) {
+function deduplicateAndRank(list, maxLimit) {
   if (!Array.isArray(list)) return [];
+  const limit = typeof maxLimit === 'number' ? maxLimit : 100;
   const map = new Map();
   for (let i = 0; i < list.length; i++) {
     const entry = list[i];
@@ -112,13 +113,13 @@ function deduplicateAndRank(list) {
   }
   const unique = Array.from(map.values());
   unique.sort((a, b) => (b.score - a.score) || (b.round - a.round));
-  return unique.slice(0, 10);
+  return unique.slice(0, limit);
 }
 
-function updateOrInsert(list, newEntry) {
+function updateOrInsert(list, newEntry, maxLimit) {
   const clean = Array.isArray(list) ? list.slice() : [];
   clean.push(newEntry);
-  return deduplicateAndRank(clean);
+  return deduplicateAndRank(clean, maxLimit);
 }
 
 function clientIp(req) {
@@ -233,10 +234,10 @@ module.exports = function handler(req, res) {
       return res.end(JSON.stringify({ error: rlError }));
     }
 
-    const allTime = updateOrInsert(loadJson(allTimeFile), sanitized);
+    const allTime = updateOrInsert(loadJson(allTimeFile), sanitized, 50);
     saveJson(allTimeFile, allTime);
 
-    const weekly = updateOrInsert(loadJson(weeklyFile), sanitized);
+    const weekly = updateOrInsert(loadJson(weeklyFile), sanitized, 100);
     saveJson(weeklyFile, weekly);
 
     res.statusCode = 200;
