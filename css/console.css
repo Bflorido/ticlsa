@@ -1219,3 +1219,372 @@
   .recycle-file-item .rf-sub { font-size:10px; color:#555; line-height:1.3; }
   .recycle-file-item .rf-meta { font-size:9.5px; color:#888; margin-top:2px; }
 
+  /* ==========================================================================
+     NON-INVASIVE HUD ACHIEVEMENT TOAST (SHIPS.EXE & ARCSYSTEMS)
+     ========================================================================== */
+  .arc-achieve-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(10, 16, 32, 0.94);
+    border: 1.5px solid #fbbf24;
+    border-radius: 8px;
+    padding: 10px 14px;
+    min-width: 290px;
+    max-width: 360px;
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.45), 0 8px 30px rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    pointer-events: none !important;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+    overflow: hidden;
+  }
+  .arc-achieve-toast.show {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  .ach-glow-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #ffd700, #00d4ff, #ffd700);
+    box-shadow: 0 0 10px #ffd700;
+  }
+  .ach-icon-wrap {
+    font-size: 28px;
+    line-height: 1;
+    filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
+    animation: achPulse 2s infinite ease-in-out;
+  }
+  @keyframes achPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+  }
+  .ach-text-wrap {
+    flex: 1;
+    min-width: 0;
+    font-family: 'Share Tech Mono', monospace, sans-serif;
+  }
+  .ach-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+  }
+  .ach-tag {
+    font-size: 9.5px;
+    font-weight: bold;
+    color: #fbbf24;
+    letter-spacing: 1px;
+    text-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+  }
+  .ach-rank {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  .ach-rank.bronze { background: #613b16; color: #cd7f32; border: 1px solid #cd7f32; }
+  .ach-rank.silver { background: #3d4349; color: #e2e8f0; border: 1px solid #c0c0c0; }
+  .ach-rank.gold { background: #523e02; color: #ffd700; border: 1px solid #ffd700; }
+  .ach-rank.plat { background: #083b47; color: #00ffff; border: 1px solid #00ffff; box-shadow: 0 0 6px #00ffff; }
+  .ach-name {
+    font-size: 13px;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    margin-bottom: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ach-desc {
+    font-size: 10.5px;
+    color: #94a3b8;
+    line-height: 1.25;
+  }
+
+  /* ACHIEVEMENTS GRID (SHOWCASE & PAUSE MODAL) */
+  .sys-achieve-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+    padding: 2px;
+  }
+  .ach-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: #e2dfcf;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    opacity: 0.62;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .ach-card.unlocked {
+    background: #ffffff;
+    border-color: #fbbf24;
+    box-shadow: 0 2px 6px rgba(251, 191, 36, 0.25);
+    opacity: 1;
+  }
+  .ach-card-icon {
+    font-size: 24px;
+    min-width: 32px;
+    text-align: center;
+    filter: grayscale(100%);
+    opacity: 0.5;
+  }
+  .ach-card.unlocked .ach-card-icon {
+    filter: none;
+    opacity: 1;
+    text-shadow: 0 0 8px rgba(251, 191, 36, 0.7);
+  }
+  .ach-card-info {
+    flex: 1;
+    min-width: 0;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+  .ach-card-title {
+    font-weight: bold;
+    color: #444;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ach-card.unlocked .ach-card-title {
+    color: #003399;
+  }
+  .ach-card-desc {
+    font-size: 9.5px;
+    color: #666;
+  }
+  .ach-card-date {
+    font-size: 8.5px;
+    color: #2e7d32;
+    margin-top: 2px;
+    font-weight: bold;
+  }
+
+  /* ==========================================================================
+     WINDOWS XP SHUT DOWN DIALOG (AUTHENTIC)
+     ========================================================================== */
+  .xp-shutdown-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 999998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .xp-shutdown-box {
+    width: 330px;
+    background: #ECE9D8;
+    border: 1.5px solid #003399;
+    border-radius: 6px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.7), inset 1px 1px 0 #fff;
+    overflow: hidden;
+    font-family: Tahoma, Verdana, sans-serif;
+    user-select: none;
+    animation: xpPop .2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes xpPop {
+    0% { transform: scale(0.92); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .xp-sd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(180deg, #0a246a 0%, #a6caf0 100%);
+    color: #fff;
+    padding: 8px 12px;
+    font-weight: bold;
+    font-size: 13px;
+    text-shadow: 1px 1px 2px #000;
+  }
+  .xp-sd-logo {
+    font-size: 10px;
+    opacity: 0.95;
+  }
+  .xp-sd-logo b {
+    font-size: 13px;
+    color: #00d4ff;
+    letter-spacing: 0.5px;
+  }
+  .xp-sd-body {
+    padding: 20px 16px 14px 16px;
+  }
+  .xp-sd-prompt {
+    font-size: 12px;
+    color: #000;
+    margin-bottom: 16px;
+  }
+  .xp-sd-options {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 6px 0;
+  }
+  .xp-sd-btn-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .xp-sd-btn-group:hover {
+    transform: translateY(-2px);
+  }
+  .xp-sd-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.35), inset 1px 1px 2px #fff;
+    border: 1px solid #7f9db9;
+    transition: all .15s;
+  }
+  .xp-sd-circle.standby { background: radial-gradient(circle at 35% 35%, #fff176, #fbc02d); }
+  .xp-sd-circle.turnoff { background: radial-gradient(circle at 35% 35%, #ff8a80, #d32f2f); }
+  .xp-sd-circle.restart { background: radial-gradient(circle at 35% 35%, #b9f6ca, #388e3c); }
+  .xp-sd-btn-group:hover .xp-sd-circle {
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.8), 0 3px 6px rgba(0,0,0,0.35);
+  }
+  .xp-sd-label {
+    font-size: 11px;
+    color: #000;
+    font-weight: 500;
+  }
+  .xp-sd-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #ECE9D8;
+    border-top: 1px solid #d4d0c8;
+  }
+
+  /* ==========================================================================
+     TASKBAR CALENDAR POPUP (WINDOWS XP STYLE)
+     ========================================================================== */
+  .xp-cal-popup {
+    position: fixed;
+    bottom: 36px;
+    right: 6px;
+    width: 250px;
+    background: #ffffff;
+    border: 1px solid #7f9db9;
+    border-radius: 4px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+    z-index: 999990;
+    font-family: Tahoma, Verdana, sans-serif;
+    user-select: none;
+    animation: xpPop .18s ease-out;
+  }
+  .xp-cal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2b6cb0;
+    color: #fff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 5px 8px;
+  }
+  .xp-cal-close {
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0 4px;
+  }
+  .xp-cal-close:hover {
+    color: #ff8a80;
+  }
+  .xp-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    padding: 8px 6px;
+    text-align: center;
+    font-size: 10px;
+  }
+  .xp-cal-day-name {
+    font-weight: bold;
+    color: #718096;
+    padding: 3px 0;
+  }
+  .xp-cal-day {
+    padding: 4px 0;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .xp-cal-day:hover {
+    background: #edf2f7;
+  }
+  .xp-cal-day.today {
+    background: #3182ce;
+    color: #fff;
+    font-weight: bold;
+  }
+  .xp-cal-day.other {
+    color: #cbd5e0;
+  }
+  .xp-cal-time {
+    padding: 6px 8px;
+    background: #f7fafc;
+    border-top: 1px solid #e2e8f0;
+    font-size: 11px;
+    text-align: center;
+    color: #2d3748;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+
+  /* DESKTOP MARQUEE SELECTION */
+  .desktop-marquee {
+    position: absolute;
+    border: 1px dotted #316ac5;
+    background: rgba(49, 106, 197, 0.25);
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  /* MOBILE RESPONSIVENESS POLISH FOR TOAST & DIALOGS */
+  @media (max-width: 768px) {
+    .arc-achieve-toast {
+      top: 52px;
+      right: auto;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      width: 92%;
+      max-width: 330px;
+      padding: 8px 12px;
+    }
+    .arc-achieve-toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+    .xp-shutdown-box {
+      width: 90%;
+      max-width: 320px;
+    }
+    .sys-achieve-grid {
+      grid-template-columns: 1fr;
+    }
+  }

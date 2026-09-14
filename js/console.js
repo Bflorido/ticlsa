@@ -234,6 +234,211 @@ function pentatonicNoteSfx(idx){
   o.start(t); o.stop(t+0.13);
 }
 
+/* =====================================================================
+   WINDOWS XP CHIPTUNE AUDIO & INTERACTION SYNTHESIS
+   ===================================================================== */
+function playXpStartup(){
+  if(!soundOn) return; const a=ac(); if(!a) return; const t=a.currentTime;
+  // Authentic Windows XP chime: Gb4, Db5, Gb5, Ab5, Bb5, Db6
+  const chords = [
+    { f: 369.99, d: 0.8, v: 0.12, del: 0.00 },
+    { f: 554.37, d: 0.9, v: 0.14, del: 0.08 },
+    { f: 739.99, d: 1.1, v: 0.16, del: 0.16 },
+    { f: 830.61, d: 1.2, v: 0.15, del: 0.28 },
+    { f: 932.33, d: 1.4, v: 0.16, del: 0.42 },
+    { f: 1108.73, d: 1.6, v: 0.14, del: 0.60 }
+  ];
+  chords.forEach(function(c){
+    const o=a.createOscillator(), g=a.createGain();
+    o.type='sine';
+    o.frequency.setValueAtTime(c.f, t+c.del);
+    g.gain.setValueAtTime(0.0001, t+c.del);
+    g.gain.linearRampToValueAtTime(c.v, t+c.del+0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+c.del+c.d);
+    o.connect(g); g.connect(masterNode(a));
+    o.start(t+c.del); o.stop(t+c.del+c.d+0.05);
+    o.onended = function(){ try{ o.disconnect(); g.disconnect(); }catch(e){} };
+  });
+}
+
+function playXpClick(){
+  if(!soundOn) return; const a=ac(); if(!a) return; const t=a.currentTime;
+  const o=a.createOscillator(), g=a.createGain();
+  o.type='triangle';
+  o.frequency.setValueAtTime(1600, t);
+  o.frequency.exponentialRampToValueAtTime(600, t+0.025);
+  g.gain.setValueAtTime(0.08, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+0.03);
+  o.connect(g); g.connect(masterNode(a));
+  o.start(t); o.stop(t+0.035);
+  o.onended = function(){ try{ o.disconnect(); g.disconnect(); }catch(e){} };
+}
+
+function playXpError(){
+  if(!soundOn) return; const a=ac(); if(!a) return; const t=a.currentTime;
+  [440, 880].forEach(function(freq){
+    const o=a.createOscillator(), g=a.createGain();
+    o.type='triangle';
+    o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.12, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+0.28);
+    o.connect(g); g.connect(masterNode(a));
+    o.start(t); o.stop(t+0.3);
+    o.onended = function(){ try{ o.disconnect(); g.disconnect(); }catch(e){} };
+  });
+}
+
+/* =====================================================================
+   ACHIEVEMENTS SYSTEM (STARSHIP ARC & ARCSYSTEMS)
+   ===================================================================== */
+const ARC_ACHIEVEMENTS = [
+  { id:'first_blood', name:'Node Defender', desc:'Destruye tu primer virus invasor en el Sector 1.', icon:'🚀', rank:'bronze' },
+  { id:'first_dash', name:'Hyperspeed Drift', desc:'Ejecuta una maniobra de evasión usando el Warp Dash.', icon:'⚡', rank:'bronze' },
+  { id:'shield_up', name:'Firewall Activo', desc:'Despliega un escudo cuántico protector.', icon:'🛡️', rank:'bronze' },
+  { id:'squad_clear', name:'Tactical Sweep', desc:'Extermina a un escuadrón completo para activar el Squad Clear Bonus.', icon:'✨', rank:'bronze' },
+  { id:'nuke_5', name:'Total Quarantine', desc:'Vaporiza a 5 o más enemigos simultáneamente con una Bomba Cuántica.', icon:'💣', rank:'silver' },
+  { id:'railgun_sniper', name:'Long Range Snipe', desc:'Elimina a un enemigo con el Railgun a más de 300px de distancia.', icon:'🎯', rank:'silver' },
+  { id:'laser_pierce', name:'Line of Fire', desc:'Atraviesa y destruye a 3 enemigos con el rayo orbital o láser perforante.', icon:'⚡', rank:'silver' },
+  { id:'combo_5', name:'In The Zone', desc:'Alcanza y mantén un multiplicador de combo de 5x.', icon:'🌪️', rank:'silver' },
+  { id:'asteroid_chain', name:'Volatile Cascade', desc:'Detona asteroides volátiles generando una reacción en cadena.', icon:'💥', rank:'silver' },
+  { id:'boss_battleship', name:'Battleship Nemesis', desc:'Destruye las 4 placas blindadas y el núcleo del Battleship MK.1.', icon:'🎖️', rank:'gold' },
+  { id:'boss_factory', name:'Factory Saboteur', desc:'Desmantela las cintas transportadoras y destruye The Industrial Factory.', icon:'🏭', rank:'gold' },
+  { id:'combo_10', name:'Godlike Rhythm', desc:'Alcanza un legendario multiplicador de combo de 10x.', icon:'👑', rank:'gold' },
+  { id:'crypto_whale', name:'Crypto Whale', desc:'Recolecta 20 tokens de la red (USDC/Piper/Circle) en una sola partida.', icon:'🪙', rank:'gold' },
+  { id:'drones_active', name:'Orbital Symphony', desc:'Activa simultáneamente los drones orbitales defensivos y Overdrive/EMP.', icon:'🛰️', rank:'gold' },
+  { id:'no_hit_sector', name:'Untouchable Ace', desc:'Supera un sector completo sin perder vidas.', icon:'🕊️', rank:'plat' },
+  { id:'score_100k', name:'Sector Legend', desc:'Alcanza 100,000 puntos y reclama el rango de Comandante.', icon:'🏆', rank:'plat' }
+];
+
+let arcAchieveQueue = [];
+let arcAchieveShowing = false;
+
+function getUnlockedAchievements(){
+  try {
+    const raw = localStorage.getItem('arc_achievements_v1');
+    return raw ? JSON.parse(raw) : {};
+  } catch(e){
+    return {};
+  }
+}
+
+function sfxAchieve(){
+  if(!soundOn) return;
+  const a = ac(); if(!a) return;
+  const t = a.currentTime;
+  const notes = [659.25, 830.61, 987.77, 1318.51];
+  notes.forEach(function(freq, i){
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(freq, t + i * 0.08);
+    g.gain.setValueAtTime(0.0001, t + i * 0.08);
+    g.gain.linearRampToValueAtTime(0.18, t + i * 0.08 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.08 + 0.28);
+    o.connect(g); g.connect(masterNode(a));
+    o.start(t + i * 0.08);
+    o.stop(t + i * 0.08 + 0.3);
+    o.onended = function(){ try{ o.disconnect(); g.disconnect(); }catch(e){} };
+  });
+}
+
+function arcUnlockAchievement(id){
+  const item = ARC_ACHIEVEMENTS.find(function(a){ return a.id === id; });
+  if(!item) return;
+  const unlocked = getUnlockedAchievements();
+  if(unlocked[id]) return;
+
+  unlocked[id] = {
+    date: new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' }),
+    ts: Date.now()
+  };
+  try {
+    localStorage.setItem('arc_achievements_v1', JSON.stringify(unlocked));
+    try { updatePilotPlate(); } catch(e){}
+  } catch(e){}
+
+  arcAchieveQueue.push(item);
+  sfxAchieve();
+  HapticEngine.trigger('squadClear');
+  if(!arcAchieveShowing){
+    showNextAchievement();
+  }
+}
+
+function showNextAchievement(){
+  if(!arcAchieveQueue.length){
+    arcAchieveShowing = false;
+    return;
+  }
+  arcAchieveShowing = true;
+  const item = arcAchieveQueue.shift();
+  const el = document.getElementById('arcAchieveToast');
+  if(!el) return;
+
+  const iconEl = document.getElementById('achIcon');
+  const nameEl = document.getElementById('achName');
+  const descEl = document.getElementById('achDesc');
+  const rankEl = document.getElementById('achRankBadge');
+
+  if(iconEl) iconEl.textContent = item.icon || '🏆';
+  if(nameEl) nameEl.textContent = item.name;
+  if(descEl) descEl.textContent = item.desc;
+  if(rankEl){
+    rankEl.textContent = item.rank.toUpperCase();
+    rankEl.className = 'ach-rank ' + item.rank;
+  }
+
+  el.style.display = 'flex';
+  requestAnimationFrame(function(){
+    el.classList.add('show');
+  });
+
+  setTimeout(function(){
+    el.classList.remove('show');
+    setTimeout(function(){
+      el.style.display = 'none';
+      showNextAchievement();
+    }, 400);
+  }, 3600);
+}
+
+function renderSysAchievements(targetId){
+  const c = document.getElementById(targetId);
+  if(!c) return;
+  const unlocked = getUnlockedAchievements();
+  const count = Object.keys(unlocked).length;
+
+  const progEl = document.getElementById('sysAchieveProgress');
+  if(progEl) progEl.textContent = count + ' / ' + ARC_ACHIEVEMENTS.length + ' UNLOCKED';
+  const modalProg = document.getElementById('nvAchieveModalProgress');
+  if(modalProg) modalProg.textContent = count + ' / ' + ARC_ACHIEVEMENTS.length + ' UNLOCKED';
+
+  let html = '';
+  ARC_ACHIEVEMENTS.forEach(function(a){
+    const u = unlocked[a.id];
+    html += '<div class="ach-card ' + (u ? 'unlocked' : '') + '">' +
+      '<div class="ach-card-icon">' + (u ? a.icon : '🔒') + '</div>' +
+      '<div class="ach-card-info">' +
+        '<div class="ach-card-title">' + esc(a.name) + ' <span class="ach-rank ' + a.rank + '" style="font-size:8px;">' + a.rank.toUpperCase() + '</span></div>' +
+        '<div class="ach-card-desc">' + esc(a.desc) + '</div>' +
+        (u ? '<div class="ach-card-date">✓ Desbloqueado: ' + u.date + '</div>' : '<div class="ach-card-date" style="color:#888;">Bloqueado</div>') +
+      '</div>' +
+    '</div>';
+  });
+  c.innerHTML = html;
+}
+
+function openAchieveModal(){
+  playXpClick();
+  renderSysAchievements('nvAchieveList');
+  const m = document.getElementById('nvAchieveModal');
+  if(m) m.classList.add('show');
+}
+function closeAchieveModal(){
+  playXpClick();
+  const m = document.getElementById('nvAchieveModal');
+  if(m) m.classList.remove('show');
+}
+
 /* ============ BOOT XP ============ */
 (function(){
   const spinHTML=Array.from({length:8},function(_,i){const a=i*Math.PI/4,x=50+38*Math.cos(a),y=50+38*Math.sin(a);
@@ -376,13 +581,13 @@ ctxMenu.addEventListener('click',function(e){
 /* ============ WINDOWS MANAGEMENT ============ */
 let zTop=600;
 function focusWin(w){ w.style.zIndex=++zTop; refreshTask(); }
-function uiWindowSfx(kind){ try{ if(kind==='open') sfx(700,.07,'triangle',.05); else if(kind==='close') sfx(420,.06,'triangle',.05); else sfx(600,.04,'square',.04); }catch(e){} }
+function uiWindowSfx(kind){ try{ if(kind==='open') playXpClick(); else if(kind==='close') playXpClick(); else sfx(600,.04,'square',.04); }catch(e){} }
 function openWindow(id){ const w=document.getElementById(id); if(!w)return; w.classList.add('open'); w.style.display='flex'; focusWin(w); uiWindowSfx('open');
   if(id==='win-browser'){
     clearAllPopups(); // silence virus popups while browsing
     if(typeof browserTabs !== 'undefined' && browserTabs.length===0){ newTab(); }
   }
-  if(id==='win-sys-props'){ updateSysPropsPilot(); }
+  if(id==='win-sys-props'){ updateSysPropsPilot(); renderSysAchievements('sysAchieveContainer'); }
   if(id==='win-recycle'){ renderRecycleBin(); }
 }
 function closeWindow(id){ const w=document.getElementById(id); if(!w)return; w.classList.remove('open'); w.style.display='none'; uiWindowSfx('close'); refreshTask(); }
@@ -636,7 +841,33 @@ function showBsod(c){ document.getElementById('bsodCause').textContent=c||'DO_NO
   let p=0; clearInterval(bsodTimer); bsodTimer=setInterval(function(){ p=Math.min(p+Math.random()*9,100); document.getElementById('bsodPct').textContent=Math.floor(p); if(p>=100)clearInterval(bsodTimer); },200);
   setTimeout(hideBsod,6000); }
 function hideBsod(){ document.getElementById('bsod').classList.remove('show'); clearInterval(bsodTimer); }
-function showShutdown(isLogoff){
+function openShutdownDialog(){
+  playXpClick();
+  const d = document.getElementById('win-shutdown-dialog');
+  if(d) d.style.display = 'flex';
+}
+function closeShutdownDialog(){
+  playXpClick();
+  const d = document.getElementById('win-shutdown-dialog');
+  if(d) d.style.display = 'none';
+}
+function doShutdownAction(act){
+  closeShutdownDialog();
+  if(act === 'turnoff'){
+    executeShutdownScreen(false);
+  } else if(act === 'standby'){
+    spawnToast('💤 ARCSYSTEMS: Modo Stand By activado. Presiona cualquier tecla para reanudar.');
+    sfx(440, 0.2, 'sine', 0.1);
+  } else if(act === 'restart'){
+    spawnToast('🔄 Reiniciando subsistemas ARCSYSTEMS XP...');
+    sfx(440, 0.15, 'triangle', 0.1);
+    setTimeout(function(){
+      playXpStartup();
+      spawnToast('✨ ARCSYSTEMS reiniciado con éxito.');
+    }, 1200);
+  }
+}
+function executeShutdownScreen(isLogoff){
   const sd = document.getElementById('shutdown');
   const msg = document.getElementById('shutdownMsg');
   const sub = document.getElementById('shutdownSub');
@@ -650,6 +881,126 @@ function showShutdown(isLogoff){
   } catch(e){}
   setTimeout(function(){ window.location.href='index.html'; }, 1800);
 }
+function showShutdown(isLogoff){
+  if(isLogoff){
+    executeShutdownScreen(true);
+  } else {
+    openShutdownDialog();
+  }
+}
+
+/* =====================================================================
+   TASKBAR CALENDAR & DESKTOP MARQUEE
+   ===================================================================== */
+function toggleCalendarPopup(ev){
+  if(ev) ev.stopPropagation();
+  playXpClick();
+  const cal = document.getElementById('calPopup');
+  if(!cal) return;
+  const isShown = (cal.style.display === 'block');
+  cal.style.display = isShown ? 'none' : 'block';
+  if(!isShown){
+    renderCalendar();
+  }
+}
+
+function renderCalendar(){
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const today = now.getDate();
+
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const myEl = document.getElementById('calMonthYear');
+  if(myEl) myEl.textContent = monthNames[month] + ' ' + year;
+
+  const timeEl = document.getElementById('calTime');
+  if(timeEl) timeEl.textContent = now.toLocaleTimeString('en-US');
+
+  const grid = document.getElementById('calGrid');
+  if(!grid) return;
+
+  const dayHeaders = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  let html = '';
+  dayHeaders.forEach(function(d){ html += '<div class="xp-cal-day-name">' + d + '</div>'; });
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevMonthDays = new Date(year, month, 0).getDate();
+
+  for(let i = firstDay - 1; i >= 0; i--){
+    html += '<div class="xp-cal-day other">' + (prevMonthDays - i) + '</div>';
+  }
+  for(let d = 1; d <= daysInMonth; d++){
+    html += '<div class="xp-cal-day ' + (d === today ? 'today' : '') + '">' + d + '</div>';
+  }
+  const totalCells = firstDay + daysInMonth;
+  const nextDays = (7 - (totalCells % 7)) % 7;
+  for(let n = 1; n <= nextDays; n++){
+    html += '<div class="xp-cal-day other">' + n + '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+document.addEventListener('click', function(e){
+  const cal = document.getElementById('calPopup');
+  if(cal && cal.style.display === 'block'){
+    if(!cal.contains(e.target) && e.target.id !== 'clock'){
+      cal.style.display = 'none';
+    }
+  }
+});
+
+function initDesktopMarquee(){
+  const desktop = document.getElementById('desktop');
+  if(!desktop) return;
+  let isDown = false, startX = 0, startY = 0, marqueeEl = null;
+
+  desktop.addEventListener('mousedown', function(e){
+    if(e.target !== desktop && !e.target.classList.contains('wallpaper')) return;
+    isDown = true;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    marqueeEl = document.createElement('div');
+    marqueeEl.className = 'desktop-marquee';
+    marqueeEl.style.left = startX + 'px';
+    marqueeEl.style.top = startY + 'px';
+    marqueeEl.style.width = '0px';
+    marqueeEl.style.height = '0px';
+    desktop.appendChild(marqueeEl);
+  });
+
+  window.addEventListener('mousemove', function(e){
+    if(!isDown || !marqueeEl) return;
+    const curX = e.clientX, curY = e.clientY;
+    const x = Math.min(startX, curX);
+    const y = Math.min(startY, curY);
+    const w = Math.abs(curX - startX);
+    const h = Math.abs(curY - startY);
+    marqueeEl.style.left = x + 'px';
+    marqueeEl.style.top = y + 'px';
+    marqueeEl.style.width = w + 'px';
+    marqueeEl.style.height = h + 'px';
+
+    const icons = desktop.querySelectorAll('.dicon');
+    icons.forEach(function(ico){
+      const r = ico.getBoundingClientRect();
+      const overlap = !(r.right < x || r.left > x + w || r.bottom < y || r.top > y + h);
+      ico.classList.toggle('selected', overlap);
+    });
+  });
+
+  window.addEventListener('mouseup', function(){
+    if(!isDown) return;
+    isDown = false;
+    if(marqueeEl){
+      marqueeEl.remove();
+      marqueeEl = null;
+    }
+  });
+}
+initDesktopMarquee();
 
 /* ============ MINESWEEPER ============ */
 let msBoard=[],msOpen=0,msFlags=0,msDead=false,msTimer=null,msSec=0,msStarted=false;
@@ -1631,17 +1982,11 @@ const NV={ on:false, state:'off', diff:'arcade', diffName:'ARCADE CHALLENGE',
   debris:[], rings:[], boss:null, bossIdx:0, keys:{},
   briefingSkip:false, pilotName:'',
   touch:{ active:false, dx:0, dy:0, stickX:80, stickY:80 },
-  autoPilot:false,
   lastTime:0, frameCount:0 };
-function toggleAutopilot(){
-  NV.autoPilot = !NV.autoPilot;
-  showStatus(NV.autoPilot ? '🤖 AUTOPILOT ENGAGED' : '👨‍✈️ MANUAL CONTROL RESTORED');
-  sfx(NV.autoPilot ? 1100 : 440, .15, 'sine', .2);
-}
 const BOOT_LINES=['SYSTEMS ONLINE...','ARC LINK ESTABLISHED','CONTROL TRANSFERRED TO PILOT_'];
 
 function nvShow(id){
-  ['nvMenu','nvHelp','nvPause','nvOver','nvBriefing','nvLeaderboard'].forEach(function(x){
+  ['nvMenu','nvHelp','nvPause','nvOver','nvBriefing','nvLeaderboard','nvAchieveModal','nvAchievements'].forEach(function(x){
     const el = document.getElementById(x);
     if(el) el.classList.remove('show');
   });
@@ -1769,16 +2114,45 @@ function openNaves(){
   runNvIntro();
 }
 function updatePilotPlate(){
-  const el=document.getElementById('nvPilotPlate'); if(!el)return;
+  const el=document.getElementById('nvPilotPlate');
   const best=getAbsoluteRecordScore();
   const name=localStorage.getItem('arc_last_pilot')||'ROOKIE';
-  el.textContent = best>0 ? ('PILOT '+name+' — RECORD: '+best.toLocaleString()) : 'NEW PILOT — NO FLIGHT RECORD YET';
-  if(!el._boundClick){
-    el._boundClick = true;
-    el.style.cursor = 'pointer';
-    el.title = 'Click to toggle Autonomous AI Pilot assist (Alt+A)';
-    el.addEventListener('click', function(e){ e.stopPropagation(); toggleAutopilot(); });
+  const unlocked = (typeof getUnlockedAchievements === 'function') ? getUnlockedAchievements() : {};
+  const total = (typeof ARC_ACHIEVEMENTS !== 'undefined') ? ARC_ACHIEVEMENTS.length : 16;
+  const achCount = Object.keys(unlocked).length;
+  const achPct = Math.round((achCount / total) * 100);
+
+  const countEl = document.getElementById('nvMenuAchCount');
+  if(countEl) countEl.textContent = '[ ' + achCount + '/' + total + ' ]';
+
+  if(el){
+    const achText = '🏆 ' + achCount + '/' + total + ' (' + achPct + '%)';
+    el.textContent = best>0 ? ('PILOT '+name+' — '+achText+' • RECORD: '+best.toLocaleString()) : ('PILOT '+name+' — '+achText+' • NO RECORD YET');
+    if(!el._boundClick){
+      el._boundClick = true;
+      el.style.cursor = 'pointer';
+      el.title = 'Click to view Pilot Trophy Vault';
+      el.addEventListener('click', function(e){ e.stopPropagation(); openMenuAchievements(); });
+    }
   }
+}
+
+function openMenuAchievements(){
+  playXpClick();
+  renderMenuAchievements();
+  nvShow('nvAchievements');
+}
+
+function renderMenuAchievements(){
+  renderSysAchievements('nvMenuAchieveList');
+  const unlocked = (typeof getUnlockedAchievements === 'function') ? getUnlockedAchievements() : {};
+  const total = (typeof ARC_ACHIEVEMENTS !== 'undefined') ? ARC_ACHIEVEMENTS.length : 16;
+  const achCount = Object.keys(unlocked).length;
+  const pct = Math.round((achCount / total) * 100);
+  const statsEl = document.getElementById('nvMenuAchieveStats');
+  if(statsEl) statsEl.textContent = achCount + ' / ' + total + ' UNLOCKED (' + pct + '%)';
+  const barEl = document.getElementById('nvMenuAchieveBar');
+  if(barEl) barEl.style.width = pct + '%';
 }
 function closeNaves(){
   NV.on=false; NV.state='off';
@@ -1906,6 +2280,10 @@ function clearArena(){
 }
 /** Avanza de sector: afijos procedurales, presupuesto de oleada, boss cada 5. */
 function nextRound(){
+  if(NV.round > 0 && (NV._hitsTakenThisRound === 0 || NV._hitsTakenThisRound === undefined)){
+    arcUnlockAchievement('no_hit_sector');
+  }
+  NV._hitsTakenThisRound = 0;
   NV.state='playing';
   NV.round++;
   NV.roundDropCounts = {};
@@ -2076,6 +2454,7 @@ function damageBoss(n,x,y){
       B.core -= n;
       if(B.core <= 0){
         nvBoom(B.x, B.y, 2.6, 'volatile'); NV.boss = null; addScore(2500, true);
+        arcUnlockAchievement('boss_battleship');
         if(cDom && cDom.bossWrap) cDom.bossWrap.classList.remove('show');
         else { const bw = document.getElementById('nvBossWrap'); if(bw) bw.classList.remove('show'); }
         if(NV.lives < 5){ NV.lives++; renderHearts(); showLifeBonus(); }
@@ -2108,6 +2487,7 @@ function damageBoss(n,x,y){
       B.core -= n;
       if(B.core <= 0){
         nvBoom(B.x, B.y, 2.8, 'volatile'); NV.boss = null; addScore(3000, true);
+        arcUnlockAchievement('boss_factory');
         if(cDom && cDom.bossWrap) cDom.bossWrap.classList.remove('show');
         else { const bw = document.getElementById('nvBossWrap'); if(bw) bw.classList.remove('show'); }
         if(NV.lives < 5){ NV.lives++; renderHearts(); showLifeBonus(); }
@@ -2126,9 +2506,12 @@ function addScore(v,high){
     return;
   }
   NV.combo++; NV.comboT=120;
+  if(NV.combo >= 5) arcUnlockAchievement('combo_5');
+  if(NV.combo >= 10) arcUnlockAchievement('combo_10');
   NV._score += v + NV.combo*5;
   NV._scoreShadow = (NV._score ^ NV._scoreKey) + 0x1A4;
   NV.score = NV._score;
+  if(NV.score >= 100000) arcUnlockAchievement('score_100k');
   document.getElementById('nvScore').textContent=NV.score;
   document.getElementById('nvCombo').textContent = NV.combo>1 ? ('COMBO x'+NV.combo) : '';
   if(high||NV.combo>=3) scorePulse();
@@ -2294,6 +2677,7 @@ function playerHit(){
   }
   const lostIdx=NV.lives-1;
   NV.lives--; renderHearts(lostIdx);
+  NV._hitsTakenThisRound = (NV._hitsTakenThisRound || 0) + 1;
   HapticEngine.trigger('hit');
   p.inv=180; // 3.0s exact invulnerability (untouchable)
   NV.glitch=26; NV.freeze=4; NV.shake=16;
@@ -2360,6 +2744,11 @@ function killEnemy(e,idx,givePow){
   nvBoom(e.x, e.y, boomScale, boomType);
   nvDebris(e.x, e.y, deb);
   addScore(pts, e.type!=='hunt');
+  arcUnlockAchievement('first_blood');
+  if(NV.bombT > 0){
+    NV.bombKills = (NV.bombKills || 0) + 1;
+    if(NV.bombKills >= 5) arcUnlockAchievement('nuke_5');
+  }
   if(e.type!=='hunt') NV.freeze=Math.max(NV.freeze, 4);
   // Dynamic Drop Rate: Inversamente escalado por sector (16% en R1 -> 7% en R8+)
   const hasShitcoin = (typeof ownedMemes !== 'undefined' && ownedMemes.shitcoin);
@@ -2388,6 +2777,7 @@ function killEnemy(e,idx,givePow){
       const remaining = NV.enemies.filter(function(en){ return en.g === grp; });
       if(remaining.length === 0){
         addScore(500, true);
+        arcUnlockAchievement('squad_clear');
         sparks(grp.cx || e.x, grp.cy || e.y, 12, '#ffe066');
         // Major chord: root + major third + fifth
         sfx(523, 0.15, 'sine', 0.18);
@@ -2471,12 +2861,16 @@ function detonateAsteroid(a,idx){
     }
   }
   const at=NV.asteroids.indexOf(a); if(at>=0) NV.asteroids.splice(at,1);
+  if(chainTargets.length >= 2){
+    arcUnlockAchievement('asteroid_chain');
+  }
   chainTargets.forEach(function(tgt){ detonateAsteroid(tgt); });
 }
 function doDash(){
   // 1. WARP DASH — directional teleport + invulnerable + clears nearby enemy bullets
   const p=NV.player; if(!p||NV.dashCd>0||NV.state!=='playing')return;
   HapticEngine.trigger('dash');
+  arcUnlockAchievement('first_dash');
   NV.dashCd=60; p.dashT=14; p.inv=Math.max(p.inv,40);
   p.face = p.ax!==0 ? p.ax : p.face;
   warpSplitSfx(); showStatus('🌀 WARP DASH');
@@ -2527,14 +2921,18 @@ function fireMissiles(){
   }
   sfx(1200,.35,'sawtooth',.25); setTimeout(function(){sfx(300,.3,'square',.2);},70);
   // Instant corridor damage along the full vertical path
+  let corridorHits = 0;
   for(let i=NV.enemies.length-1;i>=0;i--){
     const e=NV.enemies[i];
     if(e.y < p.y && Math.abs(e.x-p.x)<36){
+      corridorHits++;
+      if(p.y - e.y > 280) arcUnlockAchievement('railgun_sniper');
       const dmg = isPinguIce ? 14 : 8;
       if(e.hp && e.hp>dmg){ e.hp-=dmg; e.flash=4; nvBoom(e.x,e.y,1,'purple'); sparks(e.x,e.y,6,isPinguIce?'#00ffff':'#00d4ff'); }
       else killEnemy(e,i);
     }
   }
+  if(corridorHits >= 3) arcUnlockAchievement('laser_pierce');
   for(let i=NV.asteroids.length-1;i>=0;i--){
     const a=NV.asteroids[i];
     if(a.y < p.y && Math.abs(a.x-p.x)<40){
@@ -2562,6 +2960,7 @@ function useBomb(){
   // 4. ARCSYSTEMS QUORUM OVERDRIVE (Screen-clearing omnidirectional sonic flute vortex)
   if(NV.bombs<=0||NV.bombT>0||NV.state!=='playing')return;
   HapticEngine.trigger('bomb');
+  NV.bombKills = 0;
   NV.bombs--; NV.bombT=85; NV.bombHit=false; quorumSfx(); NV.shake=16;
   if(NV.player) NV.player.inv=Math.max(NV.player.inv,60);
   showStatus('☣️ QUORUM OVERDRIVE');
@@ -4241,13 +4640,20 @@ function switchSysTab(tab, el){
   if(el) el.classList.add('active');
   const gen = document.getElementById('sysTabGeneral');
   const oth = document.getElementById('sysTabOther');
+  const ach = document.getElementById('sysTabAchieve');
   if(!gen || !oth) return;
   if(tab === 'general'){
     gen.style.display = 'block';
     oth.style.display = 'none';
+    if(ach) ach.style.display = 'none';
+  } else if(tab === 'achieve'){
+    gen.style.display = 'none';
+    oth.style.display = 'none';
+    if(ach){ ach.style.display = 'block'; renderSysAchievements('sysAchieveContainer'); }
   } else {
     gen.style.display = 'none';
     oth.style.display = 'block';
+    if(ach) ach.style.display = 'none';
   }
 }
 
@@ -4354,7 +4760,12 @@ function powerUpIcon(t){
   }[t] || '?';
 }
 function applyPowerUp(t){
+  if(t==='usdc' || t==='circle' || t==='piper'){
+    NV.tokensCollected = (NV.tokensCollected || 0) + 1;
+    if(NV.tokensCollected >= 20) arcUnlockAchievement('crypto_whale');
+  }
   if(t==='usdc'){
+    arcUnlockAchievement('shield_up');
     NV.usdcMax = 480;
     NV.usdcActive = 480; // 8.0s shield
     addScore(500, true);
@@ -4370,6 +4781,7 @@ function applyPowerUp(t){
     NV.piperSymphonyT = 480; // 8.0s sonic symphony
     showStatus('🎵 PIPER SONIC SYMPHONY');
   } else if(t==='E'){
+    arcUnlockAchievement('shield_up');
     NV.empMax = 360;
     NV.empT = 360; // 6.0s emp lock
     NV.ebullets = [];
@@ -4384,12 +4796,16 @@ function applyPowerUp(t){
     NV.cryoT = 420; // 7.0s absolute zero
     showStatus('❄ ABSOLUTE ZERO CRYO SLOW (2X DMG)');
   } else if(t==='P'){
+    arcUnlockAchievement('shield_up');
     NV.phaseMax = 360;
     NV.phaseT = 360; // 6.0s phase shift
     showStatus('👻 PHASE GHOST SHIFT');
   } else if(t==='B'){
     NV.bombs = Math.min(NV.bombs + 1, NV.bombMax);
     showStatus('💣 THERMONUCLEAR VIRUS BOMB');
+  }
+  if(NV.dronesT > 0 && (NV.empT > 0 || NV.cryoT > 0 || NV.usdcActive > 0)){
+    arcUnlockAchievement('drones_active');
   }
   renderActiveBuffs();
 }
@@ -4636,35 +5052,6 @@ function nvLoop(timestamp){
     if(NV.touch && (Math.abs(NV.touch.dx) > 0.02 || Math.abs(NV.touch.dy) > 0.02)){
       ax = NV.touch.dx;
       ay = NV.touch.dy;
-    }
-    if(NV.autoPilot){
-      let repX = 0, repY = 0, dangerCount = 0;
-      for(let i = 0; i < NV.ebullets.length; i++){
-        const b = NV.ebullets[i];
-        if(b.active === false) continue;
-        const dx = p.x - b.x, dy = p.y - b.y;
-        const d2 = dx*dx + dy*dy;
-        if(d2 < 135*135 && d2 > 1){
-          const d = Math.sqrt(d2);
-          const w = (135 - d) / 135;
-          repX += (dx / d) * w * 3.6;
-          repY += (dy / d) * w * 3.6;
-          if(d < 60) dangerCount++;
-        }
-      }
-      const isMobDevice = (typeof isMobile !== 'undefined' && isMobile) || innerWidth <= 768;
-      const targetBaseY = H * (isMobDevice ? 0.78 : 0.82);
-      const anchorY = (targetBaseY - p.y) * 0.03;
-      const anchorX = (W * 0.5 - p.x) * 0.012;
-      let mx = repX * 1.35 + anchorX;
-      let my = repY * 1.35 + anchorY;
-      const md = Math.hypot(mx, my);
-      if(md > 1){ mx /= md; my /= md; }
-      ax = mx; ay = my;
-      if(dangerCount >= 5 && NV.bombs > 0 && NV.bombT <= 0) useBomb();
-      if(dangerCount >= 3 && NV.dashCd <= 0) doDash();
-      if(NV.misCd <= 0 && (NV.enemies.length > 0 || NV.boss)) fireMissiles();
-      if(NV.lasCd <= 0 && (NV.boss || NV.enemies.length >= 6)) firePierce();
     }
     p.ax = Math.abs(ax) > 0.1 ? Math.sign(ax) : 0;
     if(p.ax !== 0) p.face = p.ax;
@@ -6226,7 +6613,6 @@ addEventListener('keydown',function(e){
   if(e.key==='p'||e.key==='P'){ if(NV.state==='playing'){NV.state='paused';nvShow('nvPause');} else if(NV.state==='paused')nvResume(); }
   if(e.key==='Escape'){ if(NV.state==='playing'||NV.state==='paused')nvToMenu(); }
   if(e.key==='Enter'&&NV.state==='menu')nvStart();
-  if((e.key==='a'||e.key==='A') && e.altKey){ e.preventDefault(); toggleAutopilot(); }
   if((e.key==='g'||e.key==='G') && localStorage.getItem('arc_godmode_unlocked')==='true'){
     NV.phaseT=1800; showToast('⚡ GODMODE ACTIVATED for 30s');
     sfx(800,.2,'sine',.15); setTimeout(()=>sfx(1200,.2,'sine',.15),150);
