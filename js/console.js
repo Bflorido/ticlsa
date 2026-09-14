@@ -3978,13 +3978,13 @@ function nvLoop(timestamp){
     if(NV.piperSymphonyT>0)NV.piperSymphonyT--; if(NV.chronoT>0)NV.chronoT--;
     if(NV.bombCd>0){ NV.bombCd--; if(NV.bombCd===0 && NV.bombs<NV.bombMax){ NV.bombs++; showStatus('💣 BOMB READY'); modReadySfx(); } }
     const K=NV.keys;
-    let ax = (K['ArrowRight']||K['d']?1:0) - (K['ArrowLeft']||K['a']?1:0);
-    let ay = (K['ArrowDown']||K['s']?1:0) - (K['ArrowUp']||K['w']?1:0);
-    if(NV.touch && (Math.abs(NV.touch.dx) > 0.05 || Math.abs(NV.touch.dy) > 0.05)){
+    let ax = (K['ArrowRight']||K['d']||K['D']?1:0) - (K['ArrowLeft']||K['a']||K['A']?1:0);
+    let ay = (K['ArrowDown']||K['s']||K['S']?1:0) - (K['ArrowUp']||K['w']||K['W']?1:0);
+    if(NV.touch && (Math.abs(NV.touch.dx) > 0.02 || Math.abs(NV.touch.dy) > 0.02)){
       ax = NV.touch.dx;
       ay = NV.touch.dy;
     }
-    p.ax = Math.abs(ax) > 0.15 ? Math.sign(ax) : 0;
+    p.ax = Math.abs(ax) > 0.1 ? Math.sign(ax) : 0;
     if(p.ax !== 0) p.face = p.ax;
     p.x += ax * 6.5 * dtScale;
     p.y += ay * 6.5 * dtScale;

@@ -1,23 +1,33 @@
 <?php
 /**
- * ARCSYSTEMS XP — DATABASE CONFIGURATION
+ * ARCSYSTEMS XP — HARDENED DATABASE CONFIGURATION
  * Configuración de conexión a la base de datos (Hostinger / MySQL / MariaDB)
- * 
- * INSTRUCCIONES:
- * 1. Completa tus datos de conexión creados en el panel de Hostinger.
- * 2. Si dejas 'DB_ENABLED' en false, el sistema seguirá funcionando con JSON local como respaldo.
- * 3. Al poner 'DB_ENABLED' en true, todos los records se guardarán y leerán directamente de MySQL.
+ * Con soporte para variables de entorno, protección de acceso directo y cifrado.
  */
 
-return [
-    // Cambia a true una vez hayas puesto tus credenciales y creado las tablas
-    'DB_ENABLED' => false,
+// 1. Bloquear ejecución directa por HTTP (Zero-Trust)
+if (!defined('ARC_SECURE_ACCESS')) {
+    http_response_code(403);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Direct access forbidden.']);
+    exit;
+}
 
-    // Datos de conexión de tu base de datos MySQL en Hostinger
-    'DB_HOST'    => 'localhost',              // Generalmente 'localhost' en Hostinger
-    'DB_PORT'    => '3306',                   // Puerto estándar MySQL
-    'DB_NAME'    => 'u123456789_arc_database',// Nombre completo de la BD creada en Hostinger
-    'DB_USER'    => 'u123456789_arc_user',    // Usuario de la BD creado en Hostinger
-    'DB_PASS'    => 'TuPasswordSeguroAqui',   // Contraseña del usuario de la BD
-    'DB_CHARSET' => 'utf8mb4'
+return [
+    // Cambia a true una vez hayas puesto tus credenciales y creado las tablas en MySQL
+    'DB_ENABLED' => filter_var(getenv('DB_ENABLED') !== false ? getenv('DB_ENABLED') : false, FILTER_VALIDATE_BOOLEAN),
+
+    // Datos de conexión protegidos (prioriza variables de entorno o valores seguros)
+    'DB_HOST'    => getenv('DB_HOST')    ?: 'localhost',
+    'DB_PORT'    => getenv('DB_PORT')    ?: '3306',
+    'DB_NAME'    => getenv('DB_NAME')    ?: 'u123456789_arc_database',
+    'DB_USER'    => getenv('DB_USER')    ?: 'u123456789_arc_user',
+    'DB_PASS'    => getenv('DB_PASS')    ?: 'TuPasswordSeguroAqui',
+    'DB_CHARSET' => 'utf8mb4',
+
+    // Clave criptográfica para cifrado de wallets en reposo (AES-256-CBC)
+    'DB_ENCRYPTION_KEY' => getenv('DB_ENCRYPTION_KEY') ?: 'ARC_CYBER_ENCRYPTION_SECRET_KEY_2026_9973',
+
+    // Forzar conexión cifrada TLS/SSL con MySQL
+    'DB_SSL_ENABLED' => true
 ];

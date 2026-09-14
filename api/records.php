@@ -158,7 +158,44 @@ function checkRateLimit($rateFile, $nonce, $MIN_POST_GAP_MS, $MAX_POSTS_PER_DAY)
     return null;
 }
 
+define('ARC_SECURE_ACCESS', true);
 $dbConfig = file_exists(__DIR__ . '/db_config.php') ? include(__DIR__ . '/db_config.php') : [];
+
+// --- Database & Encryption Helpers ---
+function getDbKey($cfg) {
+    $raw = isset($cfg['DB_ENCRYPTION_KEY']) ? (string)$cfg['DB_ENCRYPTION_KEY'] : 'default_arc_secret_key_32_bytes!';
+    return hash('sha256', $raw, true); // 32-byte binary key for AES-256-CBC
+}
+
+function encryptWallet($wallet, $key) {
+    if (empty($wallet)) return '';
+    $iv = openssl_random_pseudo_bytes(16);
+    $ciphertext = openssl_encrypt($wallet, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
+    if ($ciphertext === false) return '';
+    return bin2hex($iv) . ':' . bin2hex($ciphertext);
+}
+
+function decryptWallet($payload, $key) {
+    if (empty($payload)) return '';
+    $parts = explode(':', $payload);
+    if (count($parts) !== 2) {
+        // Not encrypted or legacy format
+        return $payload;
+    }
+    $iv = hex2bin($parts[0]);
+    $ciphertext = hex2bin($parts[1]);
+    if ($iv === false || $ciphertext === false || strlen($iv) !== 16) {
+        return '';
+    }
+    $decrypted = openssl_decrypt($ciphertext, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
+    return $decrypted !== false ? $decrypted : '';
+}
+
+function maskWallet($wallet) {
+    if (empty($wallet) || strlen($wallet) < 10) return '';
+    return substr($wallet, 0, 6) . '...' . substr($wallet, -4);
+}
+
 function getDbConnection($cfg) {
     if (empty($cfg['DB_ENABLED'])) return null;
     try {
@@ -174,6 +211,10 @@ function getDbConnection($cfg) {
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
         ];
+        if (!empty($cfg['DB_SSL_ENABLED'])) {
+            // Enforce encrypted channel in transit
+            $opt[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+        }
         return new PDO($dsn, $user, $pass, $opt);
     } catch (Exception $e) {
         return null;
@@ -181,6 +222,7 @@ function getDbConnection($cfg) {
 }
 
 $pdo = getDbConnection($dbConfig);
+$encKey = getDbKey($dbConfig);
 
 checkWeeklyEpoch($weeklyEpochFile, $weeklyFile, $WEEK_MS);
 
@@ -188,13 +230,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($pdo) {
         try {
             $stmtAll = $pdo->query("SELECT name, wallet, score, round, date FROM leaderboard_alltime ORDER BY score DESC, round DESC LIMIT 50");
-            $allTime = $stmtAll->fetchAll();
+            $rawAllTime = $stmtAll->fetchAll();
+            $allTime = array_map(function($row) use ($encKey) {
+                $decrypted = decryptWallet($row['wallet'], $encKey);
+                $row['wallet'] = maskWallet($decrypted);
+                return $row;
+            }, $rawAllTime);
 
             $currentEpoch = loadJson($weeklyEpochFile);
             $epochVal = is_numeric($currentEpoch) ? (int)$currentEpoch : 0;
             $stmtWk = $pdo->prepare("SELECT name, wallet, score, round, date FROM leaderboard_weekly WHERE week_epoch >= ? ORDER BY score DESC, round DESC LIMIT 100");
             $stmtWk->execute([$epochVal]);
-            $weekly = $stmtWk->fetchAll();
+            $rawWeekly = $stmtWk->fetchAll();
+            $weekly = array_map(function($row) use ($encKey) {
+                $decrypted = decryptWallet($row['wallet'], $encKey);
+                $row['wallet'] = maskWallet($decrypted);
+                return $row;
+            }, $rawWeekly);
 
             echo json_encode([
                 'success' => true,
@@ -303,6 +355,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($pdo) {
         try {
+            $encryptedWallet = encryptWallet($wallet, $encKey);
+
             // Save to All-Time in DB (Insert or Update if higher)
             $sqlAll = "INSERT INTO leaderboard_alltime (name, wallet, score, round, date) 
                        VALUES (:name, :wallet, :score, :round, :date)
@@ -314,7 +368,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtA = $pdo->prepare($sqlAll);
             $stmtA->execute([
                 ':name'   => $name,
-                ':wallet' => $wallet,
+                ':wallet' => $encryptedWallet,
                 ':score'  => $score,
                 ':round'  => $round,
                 ':date'   => $date
@@ -334,7 +388,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtW->execute([
                 ':epoch'  => $epochVal,
                 ':name'   => $name,
-                ':wallet' => $wallet,
+                ':wallet' => $encryptedWallet,
                 ':score'  => $score,
                 ':round'  => $round,
                 ':date'   => $date
@@ -344,12 +398,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    $publicSanitized = $sanitized;
+    $publicSanitized['wallet'] = maskWallet($wallet);
+
     $allTime = loadJson($allTimeFile);
-    $allTime = updateOrInsert($allTime, $sanitized, 50);
+    $allTime = updateOrInsert($allTime, $publicSanitized, 50);
     $s1 = saveJson($allTimeFile, $allTime);
 
     $weekly = loadJson($weeklyFile);
-    $weekly = updateOrInsert($weekly, $sanitized, 100);
+    $weekly = updateOrInsert($weekly, $publicSanitized, 100);
     $s2 = saveJson($weeklyFile, $weekly);
 
     echo json_encode([

@@ -83,6 +83,11 @@ function checkWeeklyEpoch() {
   return epoch;
 }
 
+function maskWallet(wallet) {
+  if (!wallet || wallet.length < 10) return '';
+  return wallet.slice(0, 6) + '...' + wallet.slice(-4);
+}
+
 function deduplicateAndRank(list, maxLimit) {
   if (!Array.isArray(list)) return [];
   const limit = typeof maxLimit === 'number' ? maxLimit : 100;
@@ -94,7 +99,7 @@ function deduplicateAndRank(list, maxLimit) {
     const cleanWallet = typeof entry.wallet === 'string' ? entry.wallet.trim() : '';
     const normalized = {
       name: cleanName,
-      wallet: cleanWallet,
+      wallet: maskWallet(cleanWallet),
       score: entry.score,
       round: entry.round || 1,
       date: entry.date || new Date().toLocaleDateString('en-US'),
