@@ -29,6 +29,67 @@ function ac(){
   }
   return AC;
 }
+
+/* ============ MOBILE WEB AUDIO UNLOCK & HAPTIC ENGINE ============ */
+function unlockAudioOnMobile(){
+  const unlockEvents = ['touchstart', 'touchend', 'pointerdown', 'click'];
+  function unlock(){
+    const a = ac();
+    if(a){
+      if(a.state === 'suspended') a.resume();
+      try {
+        const buf = a.createBuffer(1, 1, 22050);
+        const src = a.createBufferSource();
+        src.buffer = buf;
+        src.connect(a.destination);
+        src.start(0);
+      } catch(e){}
+    }
+    unlockEvents.forEach(function(evt){ window.removeEventListener(evt, unlock, true); });
+  }
+  unlockEvents.forEach(function(evt){ window.addEventListener(evt, unlock, { capture: true, passive: true }); });
+}
+unlockAudioOnMobile();
+
+const HapticEngine = {
+  enabled: true,
+  canVibrate: typeof navigator !== 'undefined' && 'vibrate' in navigator,
+  patterns: {
+    tap: 12,
+    dash: [25, 35, 25],
+    laser: [16, 22, 16],
+    hit: 65,
+    bomb: [70, 40, 110],
+    squadClear: [20, 30, 45],
+    shield: 35
+  },
+  trigger: function(type){
+    if(!this.enabled || !this.canVibrate) return;
+    try {
+      const p = this.patterns[type];
+      if(p) navigator.vibrate(p);
+    } catch(e){}
+  }
+};
+
+/* Page Visibility API: Auto-Pause & Audio Suspend on Background */
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden){
+    if(typeof NV !== 'undefined' && NV && NV.state === 'playing'){
+      nvTogglePause();
+    }
+    const a = ac();
+    if(a && a.state === 'running'){
+      try { a.suspend(); } catch(e){}
+    }
+  } else {
+    const a = ac();
+    if(a && a.state === 'suspended'){
+      try { a.resume(); } catch(e){}
+    }
+  }
+});
+
 function masterNode(a){ return masterComp || a.destination; }
 function noiseBuf(){ const a=ac(); if(!a)return null; if(a._nb)return a._nb;
   const b=a.createBuffer(1,a.sampleRate,a.sampleRate); const d=b.getChannelData(0);
@@ -2068,10 +2129,12 @@ function playerHit(){
     p.inv=60; // 1s grace period on shield break
     NV.rings.push({x:p.x,y:p.y,r:10,max:60});
     sfx(300,.2,'triangle'); NV.freeze=3;
+    HapticEngine.trigger('shield');
     return;
   }
   const lostIdx=NV.lives-1;
   NV.lives--; renderHearts(lostIdx);
+  HapticEngine.trigger('hit');
   p.inv=180; // 3.0s exact invulnerability (untouchable)
   NV.glitch=26; NV.freeze=4; NV.shake=16;
   nvBoom(p.x,p.y,1.4,'normal'); hitSfx();
@@ -2171,6 +2234,7 @@ function killEnemy(e,idx,givePow){
         setTimeout(function(){ sfx(659, 0.12, 'sine', 0.16); }, 40);
         setTimeout(function(){ sfx(784, 0.10, 'sine', 0.14); }, 80);
         showStatus('✨ SQUAD CLEARED! +500');
+        HapticEngine.trigger('squadClear');
       }
     }
   }
@@ -2199,6 +2263,7 @@ function detonateAsteroid(a,idx){
 function doDash(){
   // 1. WARP DASH — directional teleport + invulnerable + clears nearby enemy bullets
   const p=NV.player; if(!p||NV.dashCd>0||NV.state!=='playing')return;
+  HapticEngine.trigger('dash');
   NV.dashCd=60; p.dashT=14; p.inv=Math.max(p.inv,40);
   p.face = p.ax!==0 ? p.ax : p.face;
   warpSplitSfx(); showStatus('🌀 WARP DASH');
@@ -2236,6 +2301,7 @@ function doDash(){
 function fireMissiles(){
   // X — ARC RAILGUN: full-screen piercing rail beam straight ahead (long range)
   const p=NV.player; if(!p||NV.misCd>0||NV.state!=='playing')return;
+  HapticEngine.trigger('laser');
   NV.misCd=240; NV.railgunT=22; NV.railgunX=p.x; NV.shake=Math.max(NV.shake,10);
   const isPinguIce = (typeof ownedMemes !== 'undefined' && ownedMemes.pingu);
   if(isPinguIce){
@@ -2269,6 +2335,7 @@ function fireMissiles(){
 function firePierce(){
   // C — ORBITAL STRIKE: 6 telegraphed ion beams called down from orbit (long range AoE)
   const p=NV.player; if(!p||NV.lasCd>0||NV.state!=='playing')return;
+  HapticEngine.trigger('laser');
   NV.lasCd=300; showStatus('🛰️ ORBITAL STRIKE');
   sfx(220,.4,'sine',.2); setTimeout(function(){sfx(880,.25,'sine',.15);},150);
   const targets=[];
@@ -2281,6 +2348,7 @@ function firePierce(){
 function useBomb(){
   // 4. VIRUSARC QUORUM OVERDRIVE (Screen-clearing omnidirectional sonic flute vortex)
   if(NV.bombs<=0||NV.bombT>0||NV.state!=='playing')return;
+  HapticEngine.trigger('bomb');
   NV.bombs--; NV.bombT=85; NV.bombHit=false; quorumSfx(); NV.shake=16;
   if(NV.player) NV.player.inv=Math.max(NV.player.inv,60);
   showStatus('☣️ QUORUM OVERDRIVE');
@@ -5645,85 +5713,112 @@ const joyZone = document.getElementById('touchJoy');
 const joyBase = document.querySelector('.joy-base');
 const joyStick = document.getElementById('joyStick');
 let joyActive = false, joyStartX = 0, joyStartY = 0, joyTouchId = null;
+let joyIdleTimer = null;
 
 function updateJoyCoord(clientX, clientY){
   let dx = clientX - joyStartX, dy = clientY - joyStartY;
-  const maxR = 48;
+  const maxR = 52;
   const d = Math.hypot(dx, dy);
   if(d > maxR){
     dx = (dx / d) * maxR;
     dy = (dy / d) * maxR;
   }
-  // Deadzone of 6px to avoid jitter
-  if(d < 6){
+  // Deadzone of 5px to avoid jitter
+  if(d < 5){
     NV.touch.dx = 0;
     NV.touch.dy = 0;
   } else {
     NV.touch.dx = dx / maxR;
     NV.touch.dy = dy / maxR;
   }
-  joyStick.style.left = (65 + dx) + 'px';
-  joyStick.style.bottom = (65 - dy) + 'px';
+  joyStick.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
 }
 
 function handleJoyStart(e){
-  e.preventDefault();
-  const r = joyBase.getBoundingClientRect();
-  joyStartX = r.left + r.width / 2;
-  joyStartY = r.top + r.height / 2;
-
-  if(e.changedTouches){
+  if(e.cancelable) e.preventDefault();
+  if(joyIdleTimer){ clearTimeout(joyIdleTimer); joyIdleTimer = null; }
+  
+  let clientX = 0, clientY = 0;
+  if(e.changedTouches && e.changedTouches.length){
     for(let i = 0; i < e.changedTouches.length; i++){
       if(joyTouchId === null){
         joyTouchId = e.changedTouches[i].identifier;
-        joyActive = true;
-        updateJoyCoord(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+        clientX = e.changedTouches[i].clientX;
+        clientY = e.changedTouches[i].clientY;
         break;
       }
     }
+    if(joyTouchId === null) return;
   } else {
-    joyActive = true;
-    updateJoyCoord(e.clientX, e.clientY);
+    joyTouchId = 'mouse';
+    clientX = e.clientX;
+    clientY = e.clientY;
   }
+
+  joyActive = true;
+  joyStartX = clientX;
+  joyStartY = clientY;
+
+  // Reposition floating base exactly where finger/pointer landed
+  joyBase.style.left = clientX + 'px';
+  joyBase.style.top = clientY + 'px';
+  joyBase.style.bottom = 'auto';
+  joyBase.classList.add('active');
+  joyStick.style.transform = 'translate(-50%, -50%)';
+
+  NV.touch.active = true;
+  NV.touch.dx = 0;
+  NV.touch.dy = 0;
+  HapticEngine.trigger('tap');
 }
 
 function handleJoyMove(e){
   if(!joyActive) return;
-  if(e.touches){
+  if(e.touches && e.touches.length){
     for(let i = 0; i < e.touches.length; i++){
       if(e.touches[i].identifier === joyTouchId){
-        e.preventDefault();
+        if(e.cancelable) e.preventDefault();
         updateJoyCoord(e.touches[i].clientX, e.touches[i].clientY);
         return;
       }
     }
-  } else {
-    e.preventDefault();
+  } else if(joyTouchId === 'mouse'){
+    if(e.cancelable) e.preventDefault();
     updateJoyCoord(e.clientX, e.clientY);
   }
 }
 
 function handleJoyEnd(e){
   if(!joyActive) return;
-  if(e && e.changedTouches){
+  let ended = false;
+  if(e && e.changedTouches && e.changedTouches.length){
     for(let i = 0; i < e.changedTouches.length; i++){
       if(e.changedTouches[i].identifier === joyTouchId){
-        joyActive = false;
-        joyTouchId = null;
-        NV.touch.dx = 0;
-        NV.touch.dy = 0;
-        joyStick.style.left = '65px';
-        joyStick.style.bottom = '65px';
-        return;
+        ended = true;
+        break;
       }
     }
-  } else if(!e || !e.touches || e.touches.length === 0){
+  } else if(!e || !e.touches || e.touches.length === 0 || joyTouchId === 'mouse'){
+    ended = true;
+  }
+
+  if(ended){
     joyActive = false;
     joyTouchId = null;
+    NV.touch.active = false;
     NV.touch.dx = 0;
     NV.touch.dy = 0;
-    joyStick.style.left = '65px';
-    joyStick.style.bottom = '65px';
+    joyStick.style.transform = 'translate(-50%, -50%)';
+    joyBase.classList.remove('active');
+    
+    // Smoothly return to default resting spot after 350ms if untouched
+    joyIdleTimer = setTimeout(function(){
+      if(!joyActive && joyBase){
+        joyBase.style.left = '';
+        joyBase.style.top = '';
+        joyBase.style.bottom = '';
+      }
+    }, 350);
   }
 }
 
@@ -5740,11 +5835,12 @@ document.addEventListener('touchcancel', handleJoyEnd);
 document.querySelectorAll('.tbtn').forEach(function(btn){
   const a = btn.dataset.a;
   function triggerAction(e){
-    if(e){
+    if(e && e.cancelable){
       e.preventDefault();
       e.stopPropagation();
     }
     btn.classList.add('active');
+    HapticEngine.trigger('tap');
     setTimeout(function(){ btn.classList.remove('active'); }, 120);
     if(a === 'dash') doDash();
     else if(a === 'mis') fireMissiles();
@@ -5752,7 +5848,7 @@ document.querySelectorAll('.tbtn').forEach(function(btn){
     else if(a === 'bmb') useBomb();
   }
   btn.addEventListener('touchstart', triggerAction, {passive:false});
-  btn.addEventListener('touchend', function(e){ e.preventDefault(); e.stopPropagation(); }, {passive:false});
+  btn.addEventListener('touchend', function(e){ if(e && e.cancelable){ e.preventDefault(); e.stopPropagation(); } }, {passive:false});
   btn.addEventListener('mousedown', triggerAction);
 });
 

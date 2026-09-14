@@ -11,7 +11,7 @@
   .synth-knob-box:focus-within { outline:2px solid var(--arc-cyan); outline-offset:1px; }
 
   * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-tap-highlight-color:transparent; }
-  html,body { height:100%; overflow:hidden; }
+  html,body { height:100%; width:100%; overflow:hidden; overscroll-behavior:none; -webkit-touch-callout:none; }
   body { font-family:Tahoma, Verdana, 'Segoe UI', sans-serif; font-size:12px; background:#3a6ea5; }
 
   #boot { position:fixed; inset:0; z-index:6000; background:#000; transition:opacity .6s; }
@@ -338,7 +338,7 @@
   #pbCanvas { background:#05010f; border:1px solid #404040; display:block; margin:0 auto; }
 
   /* NAVES v4.2 */
-  #navesGame { position:fixed; inset:0; z-index:4600; display:none; background:#000; touch-action:none; }
+  #navesGame { position:fixed; inset:0; width:100vw; height:100dvh; z-index:4600; display:none; background:#000; touch-action:none !important; overflow:hidden; }
   #navesGame.show { display:block; }
   #nvCanvas { position:absolute; inset:0; width:100%; height:100%; display:block; image-rendering:auto; will-change:transform; }
   .nv-layer { position:absolute; inset:0; z-index:50; display:none; align-items:center; justify-content:flex-start; flex-direction:column; gap:14px; text-align:center; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:24px 12px 60px; box-sizing:border-box; }
@@ -391,7 +391,7 @@
   .lb-input:focus { box-shadow:0 0 20px rgba(251,191,36,.5); }
   .lb-save-msg { color:#7cbb00; font-family:'VT323',monospace; font-size:18px; margin-top:8px; min-height:22px; }
 
-  #nvHUD { position:absolute; inset:0; display:none; pointer-events:none; z-index:6; font-family:'VT323',monospace; padding:12px 16px; }
+  #nvHUD { position:absolute; inset:0; display:none; pointer-events:none; z-index:6; font-family:'VT323',monospace; padding:calc(10px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px)); }
   #nvHUD.show { display:block; }
   .hud-top { display:flex; justify-content:space-between; align-items:flex-start; }
   .hud-score { font-size:48px; line-height:.9; color:#0ff; text-shadow:0 0 10px #0ff, 0 0 30px #0ff, 2px 2px 0 #036; }
@@ -402,7 +402,7 @@
   .hud-combobar.show { opacity:1; }
   .hud-combobar i { display:block; height:100%; background:linear-gradient(90deg,#fbbf24,#ff9500); box-shadow:0 0 6px #fbbf24; }
   .hud-diff { font-size:16px; color:#ff9500; text-shadow:0 0 8px #ff9500; margin-top:4px; }
-  .hud-center { position:absolute; top:12px; left:50%; transform:translateX(-50%); text-align:center; width:min(560px,70vw); }
+  .hud-center { position:absolute; top:calc(10px + env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%); text-align:center; width:min(560px,70vw); }
   .hud-round { font-size:24px; color:#fff; text-shadow:0 0 12px #00d4ff; letter-spacing:3px; }
   .hud-bossbar { margin-top:4px; display:none; }
   .hud-bossbar.show { display:block; }
@@ -441,22 +441,24 @@
   @keyframes buffBlink { from { opacity: 1; } to { opacity: 0.35; } }
 
   .touch-zone { position:absolute; z-index:20; display:none; pointer-events:auto; touch-action:none; }
-  #touchJoy { left:14px; bottom:14px; width:160px; height:160px; }
+  #touchJoy { position:absolute; top:0; left:0; width:55vw; height:100%; z-index:25; display:none; pointer-events:auto; touch-action:none; }
   #touchJoy.show, #touchBtns.show { display:block; }
-  .joy-base { position:absolute; left:15px; bottom:15px; width:130px; height:130px; border-radius:50%; background:rgba(0,212,255,.12); border:2.5px solid rgba(0,212,255,.5); box-shadow:0 0 15px rgba(0,212,255,.25); touch-action:none; }
-  .joy-stick { position:absolute; width:54px; height:54px; border-radius:50%; background:rgba(0,212,255,.55); border:2.5px solid #00d4ff; left:65px; bottom:65px; transform:translate(-50%,-50%); box-shadow:0 0 12px #00d4ff; pointer-events:none; }
-  #touchBtns { right:14px; bottom:14px; width:180px; height:180px; }
-  .tbtn { position:absolute; width:72px; height:72px; border-radius:50%; background:rgba(8,12,28,.82); border:2.5px solid #00d4ff; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 0 14px rgba(0,0,0,.75); transition:transform .08s, background .12s, opacity .2s; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
-  .tbtn:active, .tbtn.active { background:rgba(0,212,255,.45); transform:scale(.92); }
+  .joy-base { position:absolute; left:calc(70px + env(safe-area-inset-left, 0px)); bottom:calc(70px + env(safe-area-inset-bottom, 0px)); width:134px; height:134px; border-radius:50%; background:radial-gradient(circle, rgba(0,212,255,.08) 0%, rgba(0,212,255,.22) 100%); border:2.5px solid rgba(0,212,255,.5); box-shadow:0 0 18px rgba(0,212,255,.28); touch-action:none; pointer-events:none; opacity:0.45; transform:translate(-50%,-50%) scale(0.92); transition:opacity .18s ease-out, transform .18s cubic-bezier(0.18, 0.89, 0.32, 1.28); will-change:transform, left, top; }
+  .joy-base.active { opacity:1; transform:translate(-50%,-50%) scale(1.05); border-color:#00d4ff; box-shadow:0 0 24px rgba(0,212,255,.55); }
+  .joy-stick { position:absolute; width:54px; height:54px; border-radius:50%; background:radial-gradient(circle, #00d4ff 0%, #0088cc 100%); border:2.5px solid #ffffff; left:50%; top:50%; transform:translate(-50%,-50%); box-shadow:0 0 14px #00d4ff, inset 0 2px 4px rgba(255,255,255,.8); pointer-events:none; will-change:transform; }
+  #touchBtns { position:absolute; right:calc(8px + env(safe-area-inset-right, 0px)); bottom:calc(10px + env(safe-area-inset-bottom, 0px)); width:210px; height:210px; pointer-events:none; z-index:30; touch-action:none; }
+  .tbtn { position:absolute; border-radius:50%; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,.75); transition:transform .08s, filter .12s, opacity .2s; user-select:none; -webkit-user-select:none; touch-action:none; pointer-events:auto; }
+  .tbtn:active, .tbtn.active { transform:scale(.90) !important; filter:brightness(1.28); }
   .tbtn.cooldown { opacity:0.45; filter:grayscale(0.6); }
   .tbtn .tb-ico { font-size:24px; line-height:1; pointer-events:none; }
   .tbtn .tb-lbl { font-family:'VT323',monospace; font-size:12px; letter-spacing:1px; line-height:1; margin-top:2px; color:#9fd4ff; pointer-events:none; }
-  .tbtn.dash { right:6px; bottom:6px; border-color:#7cbb00; box-shadow:0 0 12px rgba(124,187,0,.45); }
-  .tbtn.mis { right:92px; bottom:6px; border-color:#ff9500; box-shadow:0 0 12px rgba(255,149,0,.45); }
-  .tbtn.las { right:6px; bottom:92px; border-color:#00d4ff; box-shadow:0 0 12px rgba(0,212,255,.45); }
-  .tbtn.bmb { right:92px; bottom:92px; border-color:#ff2d55; box-shadow:0 0 12px rgba(255,45,85,.45); }
+  /* Thumb arc ergonomics with Fitts's law: DASH primary */
+  .tbtn.dash { right:6px; bottom:6px; width:78px; height:78px; border:3px solid #7cbb00; background:radial-gradient(circle, rgba(124,187,0,.35) 0%, rgba(14,28,10,.9) 100%); box-shadow:0 0 16px rgba(124,187,0,.45); }
+  .tbtn.mis { right:94px; bottom:10px; width:64px; height:64px; border:2.5px solid #ff9500; background:radial-gradient(circle, rgba(255,149,0,.3) 0%, rgba(32,20,10,.9) 100%); box-shadow:0 0 14px rgba(255,149,0,.4); }
+  .tbtn.las { right:10px; bottom:94px; width:64px; height:64px; border:2.5px solid #00d4ff; background:radial-gradient(circle, rgba(0,212,255,.3) 0%, rgba(10,24,36,.9) 100%); box-shadow:0 0 14px rgba(0,212,255,.4); }
+  .tbtn.bmb { right:88px; bottom:88px; width:58px; height:58px; border:2.5px solid #ff2d55; background:radial-gradient(circle, rgba(255,45,85,.3) 0%, rgba(36,10,18,.9) 100%); box-shadow:0 0 14px rgba(255,45,85,.4); }
 
-  .nv-pause-btn { pointer-events:auto; background:rgba(0,20,40,.85); border:2px solid #00d4ff; border-radius:8px; color:#00d4ff; font-size:18px; width:44px; height:38px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 0 10px rgba(0,212,255,.3); margin-bottom:6px; transition:all .15s; touch-action:manipulation; }
+  .nv-pause-btn { pointer-events:auto; background:rgba(0,20,40,.85); border:2px solid #00d4ff; border-radius:8px; color:#00d4ff; font-size:18px; width:44px; height:38px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 0 10px rgba(0,212,255,.3); margin-bottom:6px; transition:all .15s; touch-action:none; }
   .nv-pause-btn:active { background:rgba(0,212,255,.4); color:#fff; transform:scale(.94); }
 
   @media (max-width: 640px) {
@@ -466,33 +468,30 @@
     .hud-mod { width:46px; height:46px; }
     .hud-mod .ic { font-size:22px; }
     .hud-modules { gap:6px; }
-    #touchJoy { left:6px; bottom:6px; width:140px; height:140px; touch-action:none; }
-    .joy-base { left:10px; bottom:10px; width:120px; height:120px; }
-    .joy-stick { left:60px; bottom:60px; }
-    #touchBtns { right:6px; bottom:6px; width:165px; height:165px; touch-action:none; }
-    .tbtn { width:66px; height:66px; touch-action:none; }
-    .tbtn .tb-ico { font-size:22px; }
+    .joy-base { width:120px; height:120px; }
+    .joy-stick { width:48px; height:48px; }
+    #touchBtns { width:195px; height:195px; right:calc(4px + env(safe-area-inset-right, 0px)); bottom:calc(6px + env(safe-area-inset-bottom, 0px)); }
+    .tbtn.dash { width:72px; height:72px; right:4px; bottom:4px; }
+    .tbtn.mis { width:58px; height:58px; right:86px; bottom:8px; }
+    .tbtn.las { width:58px; height:58px; right:8px; bottom:86px; }
+    .tbtn.bmb { width:54px; height:54px; right:80px; bottom:80px; }
+    .tbtn .tb-ico { font-size:20px; }
     .tbtn .tb-lbl { font-size:11px; }
-    .tbtn.dash { right:4px; bottom:4px; }
-    .tbtn.mis { right:84px; bottom:4px; }
-    .tbtn.las { right:4px; bottom:84px; }
-    .tbtn.bmb { right:84px; bottom:84px; }
   }
 
   /* Ergonomic layout for mobile landscape orientation */
   @media (max-height: 520px) and (orientation: landscape) {
-    #touchJoy { left:12px; bottom:12px; width:130px; height:130px; }
-    .joy-base { left:10px; bottom:10px; width:110px; height:110px; }
-    .joy-stick { left:55px; bottom:55px; }
-    #touchBtns { right:12px; bottom:12px; width:190px; height:100px; }
-    .tbtn { width:52px; height:52px; }
+    .joy-base { width:114px; height:114px; left:calc(60px + env(safe-area-inset-left, 0px)); bottom:calc(55px + env(safe-area-inset-bottom, 0px)); }
+    .joy-stick { width:44px; height:44px; }
+    #touchBtns { right:calc(10px + env(safe-area-inset-right, 0px)); bottom:calc(6px + env(safe-area-inset-bottom, 0px)); width:240px; height:106px; }
+    .tbtn { width:54px; height:54px; }
     .tbtn .tb-ico { font-size:18px; }
     .tbtn .tb-lbl { font-size:9px; }
-    .tbtn.dash { right:0px; bottom:0px; }
-    .tbtn.mis { right:60px; bottom:0px; }
-    .tbtn.las { right:120px; bottom:0px; }
-    .tbtn.bmb { right:60px; bottom:56px; }
-    .hud-top { padding:4px 10px; }
+    .tbtn.dash { right:4px; bottom:4px; width:64px; height:64px; }
+    .tbtn.mis { right:78px; bottom:4px; width:54px; height:54px; }
+    .tbtn.las { right:142px; bottom:4px; width:54px; height:54px; }
+    .tbtn.bmb { right:78px; bottom:64px; width:48px; height:48px; }
+    .hud-top { padding:calc(4px + env(safe-area-inset-top, 0px)) 10px; }
     .hud-score { font-size:28px; }
     .hud-round { font-size:14px; }
   }
