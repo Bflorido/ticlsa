@@ -22,10 +22,12 @@ if (!is_dir($dataDir)) { @mkdir($dataDir, 0777, true); }
 $usersFile = $dataDir . '/forum_users.json';
 $sessFile  = $dataDir . '/forum_sessions.json';
 $postsFile = $dataDir . '/forum_posts.json';
+$rateFile  = $dataDir . '/forum_rate.json';
 
 $MAX_POST_LEN = 400;
 $MIN_POST_GAP  = 15; // seconds between posts per user
 $SESSION_TTL   = 7 * 24 * 3600;
+$MAX_REGS_PER_HOUR = 3;
 
 function loadArr($f, $assoc = true) {
     if (!file_exists($f)) return [];
@@ -35,6 +37,28 @@ function loadArr($f, $assoc = true) {
 function saveArr($f, $d) { @file_put_contents($f, json_encode($d, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX); }
 function fail($code, $msg) { http_response_code($code); echo json_encode(['error' => $msg]); exit; }
 function cleanUser($u) { return strtoupper(substr(preg_replace('/[^A-Za-z0-9_-]/', '', (string)$u), 0, 12)); }
+function clientIp() {
+    $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
+    return preg_replace('/[^0-9a-fA-F:\.]/', '', $ip);
+}
+
+function checkRegRateLimit($rateFile, $maxPerHour) {
+    $now = time();
+    $ip = clientIp();
+    $rl = loadArr($rateFile);
+    foreach ($rl as $k => $v) {
+        if (!isset($v['hour']) || ($now - $v['hour']) > 3600) unset($rl[$k]);
+    }
+    $entry = isset($rl[$ip]) ? $rl[$ip] : ['count' => 0, 'hour' => $now];
+    if ($entry['count'] >= $maxPerHour) {
+        saveArr($rateFile, $rl);
+        return false;
+    }
+    $entry['count']++;
+    $rl[$ip] = $entry;
+    saveArr($rateFile, $rl);
+    return true;
+}
 
 $raw = @file_get_contents('php://input');
 if (strlen($raw) > 4096) fail(413, 'Payload too large');
@@ -44,6 +68,9 @@ $action = isset($body['action']) ? $body['action'] : (isset($_GET['action']) ? $
 switch ($action) {
 
 case 'register':
+    if (!checkRegRateLimit($rateFile, $MAX_REGS_PER_HOUR)) {
+        fail(429, 'Rate limit exceeded: maximum ' . $MAX_REGS_PER_HOUR . ' registrations per hour per IP.');
+    }
     $user = cleanUser(isset($body['user']) ? $body['user'] : '');
     $pass = (string)(isset($body['pass']) ? $body['pass'] : '');
     if (strlen($user) < 3) fail(400, 'Username must be at least 3 chars (A-Z, 0-9, _-)');
@@ -68,7 +95,7 @@ case 'login':
     $token = bin2hex(random_bytes(24));
     $sessions = loadArr($sessFile);
     $now = time();
-    foreach ($sessions as $k => $s) { if ($s['exp'] < $now) unset($sessions[$k]); }
+    foreach ($sessions as $k => $s) { if (!isset($s['exp']) || $s['exp'] < $now) unset($sessions[$k]); }
     $sessions[$token] = ['user' => $user, 'exp' => $now + $SESSION_TTL];
     saveArr($sessFile, $sessions);
     echo json_encode(['success' => true, 'token' => $token, 'user' => $user]);
