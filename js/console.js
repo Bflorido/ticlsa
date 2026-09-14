@@ -383,6 +383,7 @@ function openWindow(id){ const w=document.getElementById(id); if(!w)return; w.cl
     if(typeof browserTabs !== 'undefined' && browserTabs.length===0){ newTab(); }
   }
   if(id==='win-sys-props'){ updateSysPropsPilot(); }
+  if(id==='win-recycle'){ renderRecycleBin(); }
 }
 function closeWindow(id){ const w=document.getElementById(id); if(!w)return; w.classList.remove('open'); w.style.display='none'; uiWindowSfx('close'); refreshTask(); }
 function minimize(id){ const w=document.getElementById(id); if(!w)return; w.style.display='none'; uiWindowSfx('min'); refreshTask(); }
@@ -396,7 +397,7 @@ function taskClick(id){ const w=document.getElementById(id); if(!w)return;
   if(w.style.display==='none'||!w.classList.contains('open'))openWindow(id);
   else if(parseInt(w.style.zIndex)===zTop)minimize(id); else focusWin(w); }
 function refreshTask(){
-  ['win-main','win-browser','win-memes','win-note','win-games','win-mines','win-spider','win-pinball','win-config','win-control-panel','win-computer','win-sys-props'].forEach(function(id){
+  ['win-main','win-browser','win-memes','win-note','win-games','win-mines','win-spider','win-pinball','win-config','win-control-panel','win-computer','win-sys-props','win-recycle'].forEach(function(id){
     const w=document.getElementById(id), b=document.getElementById('tb-'+id);
     if(!b || !w) return;
     // Taskbar shows ONLY currently-open apps; minimized ones stay but dimmed
@@ -3916,10 +3917,176 @@ function launchApp(action){
   else if(action === 'memes') openWindow('win-memes');
   else if(action === 'games') openWindow('win-games');
   else if(action === 'note') openWindow('win-note');
-  else if(action === 'recycle') spawnPopup();
+  else if(action === 'recycle') openWindow('win-recycle');
   else if(action === 'bsod') showBsod('DO_NOT_TOUCH.exe');
   else if(action === 'config') openWindow('win-config');
 }
+
+/* ============ WINDOWS XP RECYCLE BIN ENGINE ============ */
+const initialRecycleFiles = [
+  {
+    id: 'rec_firmware',
+    name: 'starship_secret_firmware_v4.bin',
+    icon: '🚀',
+    loc: 'C:\\Games\\ships.exe\\firmware',
+    date: '2004-09-14 11:24 PM',
+    size: '1.8 MB',
+    desc: 'Firmware cuántico de los motores de ships.exe. Overclockea las flautas láser a 60 FPS Turbo.'
+  },
+  {
+    id: 'rec_blueprint',
+    name: 'plasma_cannons_blueprint.dxf',
+    icon: '📐',
+    loc: 'C:\\Pilot\\Blueprints\\Starfighter',
+    date: '2004-09-12 04:15 AM',
+    size: '2.4 MB',
+    desc: 'Planos ultra secretos del caza estelar con alas en flecha invertida y triple estela de plasma.'
+  },
+  {
+    id: 'rec_crypto',
+    name: 'old_crypto_portfolio_2021.txt',
+    icon: '📄',
+    loc: 'C:\\Pilot\\Documents\\Finances',
+    date: '2021-11-10 09:00 AM',
+    size: '14 KB',
+    desc: '"Compré en el máximo histórico, vendí en el dip... Prometo nunca volver a hacer trading con sueño 😭"'
+  },
+  {
+    id: 'rec_ie6',
+    name: 'internet_explorer_6.exe',
+    icon: '🌐',
+    loc: 'C:\\Program Files\\Internet Explorer',
+    date: '2022-06-15 12:00 PM',
+    size: '420 KB',
+    desc: 'Descansa en paz, leyenda. Serviste para descargar Chrome y ARC Browser con orgullo (1995 - 2022).'
+  },
+  {
+    id: 'rec_keygen',
+    name: 'totally_legit_keygen.exe',
+    icon: '☣️',
+    loc: 'C:\\Downloads\\P2P_Share',
+    date: '2004-08-20 03:33 PM',
+    size: '88 KB',
+    desc: 'Música chiptune a 120 dB incluida. Probablemente el troyano que provocó que VirusARC.exe se active.'
+  },
+  {
+    id: 'rec_bot',
+    name: 'secret_trading_bot.py',
+    icon: '🐍',
+    loc: 'C:\\Projects\\ARC_Bot',
+    date: '2024-03-01 10:45 AM',
+    size: '5 KB',
+    desc: 'def trade():\n    if market.is_red():\n        pray_to_memes()\n    else:\n        hodl_forever()'
+  }
+];
+let recycleFiles = [...initialRecycleFiles];
+
+function renderRecycleBin(){
+  const grid = document.getElementById('recycleGrid');
+  const empty = document.getElementById('recycleEmptyState');
+  const countSide = document.getElementById('recycleCountSide');
+  const countStat = document.getElementById('recycleStatusCount');
+  const sizeStat = document.getElementById('recycleStatusSize');
+  if(!grid) return;
+
+  if(!recycleFiles || recycleFiles.length === 0){
+    grid.style.display = 'none';
+    if(empty) empty.style.display = 'block';
+    if(countSide) countSide.textContent = '0 items';
+    if(countStat) countStat.textContent = '0 objects';
+    if(sizeStat) sizeStat.textContent = '0 bytes';
+    return;
+  }
+
+  grid.style.display = 'grid';
+  if(empty) empty.style.display = 'none';
+  if(countSide) countSide.textContent = recycleFiles.length + ' items';
+  if(countStat) countStat.textContent = recycleFiles.length + ' objects';
+  if(sizeStat) sizeStat.textContent = '4.8 MB';
+
+  grid.innerHTML = '';
+  recycleFiles.forEach(function(f){
+    const item = document.createElement('div');
+    item.className = 'recycle-file-item';
+    item.innerHTML = '<div class="rf-icon">' + f.icon + '</div>' +
+                     '<div class="rf-info">' +
+                       '<div class="rf-name">' + f.name + '</div>' +
+                       '<div class="rf-sub">' + f.size + ' • ' + f.loc + '</div>' +
+                       '<div class="rf-meta">Deleted: ' + f.date + '</div>' +
+                     '</div>';
+    item.onclick = function(){ previewRecycleFile(f.id); };
+    grid.appendChild(item);
+  });
+}
+
+function previewRecycleFile(id){
+  const f = recycleFiles.find(function(item){ return item.id === id; });
+  if(!f) return;
+  try{ sfx(650, 0.05, 'triangle', 0.08); }catch(e){}
+  const ok = confirm(
+    '📄 ' + f.name + '\n' +
+    '─────────────────────────\n' +
+    '• Original Location: ' + f.loc + '\n' +
+    '• Size: ' + f.size + '\n' +
+    '• Date Deleted: ' + f.date + '\n\n' +
+    'INFO: ' + f.desc + '\n\n' +
+    '¿Deseas restaurar este archivo al sistema?'
+  );
+  if(ok){
+    restoreSingleRecycleFile(id);
+  }
+}
+
+function restoreSingleRecycleFile(id){
+  const idx = recycleFiles.findIndex(function(item){ return item.id === id; });
+  if(idx === -1) return;
+  const f = recycleFiles[idx];
+  recycleFiles.splice(idx, 1);
+  renderRecycleBin();
+  try{
+    sfx(523, 0.1, 'sine', 0.12);
+    setTimeout(function(){ sfx(659, 0.12, 'sine', 0.15); }, 70);
+  }catch(e){}
+  spawnToast('♻️ Restaurado: ' + f.name);
+}
+
+function emptyRecycleBin(){
+  if(!recycleFiles || recycleFiles.length === 0){
+    spawnToast('🗑️ La Papelera de Reciclaje ya está vacía.');
+    return;
+  }
+  const confirmMsg = '¿Estás seguro de que deseas eliminar permanentemente estos ' + recycleFiles.length + ' elementos de la Papelera de Reciclaje?';
+  if(!confirm(confirmMsg)) return;
+
+  try {
+    sfx(160, 0.07, 'sawtooth', 0.22);
+    setTimeout(function(){ sfx(110, 0.09, 'square', 0.18); }, 50);
+    setTimeout(function(){ sfx(80, 0.12, 'sawtooth', 0.15); }, 100);
+    setTimeout(function(){ sfx(55, 0.16, 'triangle', 0.12); }, 160);
+  } catch(e){}
+
+  recycleFiles = [];
+  renderRecycleBin();
+  spawnToast('🗑️ Papelera vaciada. Se liberaron 4.8 MB de espacio en disco.');
+}
+
+function restoreRecycleItems(){
+  if(recycleFiles && recycleFiles.length === initialRecycleFiles.length){
+    spawnToast('🚀 ¡Archivos restaurados! Se recuperaron los planos secretos y el firmware del caza estelar de ships.exe.');
+    return;
+  }
+  recycleFiles = [...initialRecycleFiles];
+  renderRecycleBin();
+
+  try {
+    sfx(523, 0.12, 'sine', 0.15);
+    setTimeout(function(){ sfx(659, 0.12, 'sine', 0.15); }, 80);
+    setTimeout(function(){ sfx(784, 0.18, 'sine', 0.18); }, 160);
+  } catch(e){}
+
+  spawnToast('🚀 ¡Archivos restaurados! Se recuperaron los planos secretos y el firmware del caza estelar de ships.exe.');
+}
+
 
 function switchSysTab(tab, el){
   document.querySelectorAll('.sys-tab').forEach(function(t){ t.classList.remove('active'); });
