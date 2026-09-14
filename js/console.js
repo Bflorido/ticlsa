@@ -320,22 +320,22 @@ function playXpError(){
    ACHIEVEMENTS SYSTEM (STARSHIP ARC & ARCSYSTEMS)
    ===================================================================== */
 const ARC_ACHIEVEMENTS = [
-  { id:'first_blood', name:'Node Defender', desc:'Destruye tu primer virus invasor en el Sector 1.', icon:'🚀', rank:'bronze' },
-  { id:'first_dash', name:'Hyperspeed Drift', desc:'Ejecuta una maniobra de evasión usando el Warp Dash.', icon:'⚡', rank:'bronze' },
-  { id:'shield_up', name:'Firewall Activo', desc:'Despliega un escudo cuántico protector.', icon:'🛡️', rank:'bronze' },
-  { id:'squad_clear', name:'Tactical Sweep', desc:'Extermina a un escuadrón completo para activar el Squad Clear Bonus.', icon:'✨', rank:'bronze' },
-  { id:'nuke_5', name:'Total Quarantine', desc:'Vaporiza a 5 o más enemigos simultáneamente con una Bomba Cuántica.', icon:'💣', rank:'silver' },
-  { id:'railgun_sniper', name:'Long Range Snipe', desc:'Elimina a un enemigo con el Railgun a más de 300px de distancia.', icon:'🎯', rank:'silver' },
-  { id:'laser_pierce', name:'Line of Fire', desc:'Atraviesa y destruye a 3 enemigos con el rayo orbital o láser perforante.', icon:'⚡', rank:'silver' },
-  { id:'combo_5', name:'In The Zone', desc:'Alcanza y mantén un multiplicador de combo de 5x.', icon:'🌪️', rank:'silver' },
-  { id:'asteroid_chain', name:'Volatile Cascade', desc:'Detona asteroides volátiles generando una reacción en cadena.', icon:'💥', rank:'silver' },
-  { id:'boss_battleship', name:'Battleship Nemesis', desc:'Destruye las 4 placas blindadas y el núcleo del Battleship MK.1.', icon:'🎖️', rank:'gold' },
-  { id:'boss_factory', name:'Factory Saboteur', desc:'Desmantela las cintas transportadoras y destruye The Industrial Factory.', icon:'🏭', rank:'gold' },
-  { id:'combo_10', name:'Godlike Rhythm', desc:'Alcanza un legendario multiplicador de combo de 10x.', icon:'👑', rank:'gold' },
-  { id:'crypto_whale', name:'Crypto Whale', desc:'Recolecta 20 tokens de la red (USDC/Piper/Circle) en una sola partida.', icon:'🪙', rank:'gold' },
-  { id:'drones_active', name:'Orbital Symphony', desc:'Activa simultáneamente los drones orbitales defensivos y Overdrive/EMP.', icon:'🛰️', rank:'gold' },
-  { id:'no_hit_sector', name:'Untouchable Ace', desc:'Supera un sector completo sin perder vidas.', icon:'🕊️', rank:'plat' },
-  { id:'score_100k', name:'Sector Legend', desc:'Alcanza 100,000 puntos y reclama el rango de Comandante.', icon:'🏆', rank:'plat' }
+  { id:'first_blood', name:'Node Defender', desc:'Destroy your first invading virus in Sector 1.', icon:'🚀', rank:'bronze' },
+  { id:'first_dash', name:'Hyperspeed Drift', desc:'Execute an evasion maneuver using Warp Dash.', icon:'⚡', rank:'bronze' },
+  { id:'shield_up', name:'Active Firewall', desc:'Deploy a protective quantum shield.', icon:'🛡️', rank:'bronze' },
+  { id:'squad_clear', name:'Tactical Sweep', desc:'Annihilate an entire squad to trigger Squad Clear Bonus.', icon:'✨', rank:'bronze' },
+  { id:'nuke_5', name:'Total Quarantine', desc:'Vaporize 5 or more enemies at once with a Quantum Bomb.', icon:'💣', rank:'silver' },
+  { id:'railgun_sniper', name:'Long Range Snipe', desc:'Eliminate an enemy with the Railgun from over 300px away.', icon:'🎯', rank:'silver' },
+  { id:'laser_pierce', name:'Line of Fire', desc:'Pierce and destroy 3 enemies with a piercing beam or orbital strike.', icon:'⚡', rank:'silver' },
+  { id:'combo_5', name:'In The Zone', desc:'Reach and maintain a 5x combo multiplier.', icon:'🌪️', rank:'silver' },
+  { id:'asteroid_chain', name:'Volatile Cascade', desc:'Detonate volatile asteroids to ignite a chain reaction.', icon:'💥', rank:'silver' },
+  { id:'boss_battleship', name:'Battleship Nemesis', desc:'Destroy all 4 armor plates and the core of Battleship MK.1.', icon:'🎖️', rank:'gold' },
+  { id:'boss_factory', name:'Factory Saboteur', desc:'Dismantle the conveyor belts and destroy The Industrial Factory.', icon:'🏭', rank:'gold' },
+  { id:'combo_10', name:'Godlike Rhythm', desc:'Achieve a legendary 10x combo multiplier.', icon:'👑', rank:'gold' },
+  { id:'crypto_whale', name:'Crypto Whale', desc:'Collect 20 network tokens (USDC/Piper/Circle) in a single run.', icon:'🪙', rank:'gold' },
+  { id:'drones_active', name:'Orbital Symphony', desc:'Simultaneously activate orbital drones and Overdrive/EMP.', icon:'🛰️', rank:'gold' },
+  { id:'no_hit_sector', name:'Untouchable Ace', desc:'Clear an entire sector without taking any hull damage.', icon:'🕊️', rank:'plat' },
+  { id:'score_100k', name:'Sector Legend', desc:'Reach 100,000 points and claim Commander rank.', icon:'🏆', rank:'plat' }
 ];
 
 let arcAchieveQueue = [];
@@ -426,7 +426,7 @@ function showNextAchievement(){
       el.style.display = 'none';
       showNextAchievement();
     }, 400);
-  }, 3600);
+  }, 5000);
 }
 
 function renderSysAchievements(targetId){
