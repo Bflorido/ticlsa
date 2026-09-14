@@ -33,7 +33,9 @@ function noiseBuf(){ const a=ac(); if(!a)return null; if(a._nb)return a._nb;
 function toggleSound(){ soundOn=!soundOn; document.getElementById('sndBtn').textContent=soundOn?'🔊 Sound: ON':' Sound: OFF'; }
 function sfx(f,d,type,v){ if(!soundOn)return; const a=ac(); if(!a)return;
   const o=a.createOscillator(),g=a.createGain(); o.type=type||'square'; o.frequency.value=f; g.gain.value=v||.1;
-  o.connect(g); g.connect(masterNode(a)); o.start(); g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d); o.stop(a.currentTime+d); }
+  o.connect(g); g.connect(masterNode(a));
+  o.onended = function(){ try{ o.disconnect(); g.disconnect(); }catch(e){} };
+  o.start(); g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d); o.stop(a.currentTime+d); }
 
 const flutePitches=[880, 987.77, 1174.66, 1318.51, 1567.98]; // A5, B5, D6, E6, G6
 let flutePitchIdx=0;
@@ -50,6 +52,7 @@ function laserSfx(){
   fg.gain.linearRampToValueAtTime(0.14, t+0.015);
   fg.gain.exponentialRampToValueAtTime(0.0001, t+0.11);
   fo.connect(fg); fg.connect(masterNode(a));
+  fo.onended = function(){ try{ fo.disconnect(); fg.disconnect(); }catch(e){} };
   fo.start(t); fo.stop(t+0.12);
 
   // Air breath / flute attack transient
@@ -60,6 +63,7 @@ function laserSfx(){
   bg.gain.setValueAtTime(0.05, t);
   bg.gain.exponentialRampToValueAtTime(0.0001, t+0.07);
   bo.connect(bg); bg.connect(masterNode(a));
+  bo.onended = function(){ try{ bo.disconnect(); bg.disconnect(); }catch(e){} };
   bo.start(t); bo.stop(t+0.08);
 }
 function explosionSfx(p){ if(!soundOn)return; const a=ac(); if(!a)return; const t=a.currentTime; p=p||1;
@@ -1562,6 +1566,8 @@ function openNaves(){
   document.getElementById('navesGame').classList.add('show');
   clearAllPopups(); // silence virus engine while playing
   NV.on=true; NV.state='intro'; NV.crtT=0; nvResize(); nvShow(null);
+  lastFrameTime = 0;
+  requestAnimationFrame(nvLoop);
   NV.score=0; NV.combo=0; NV.round=0;
   document.getElementById('nvScore').textContent='0';
   document.getElementById('nvScore').classList.remove('pulse');
@@ -3803,8 +3809,8 @@ function applyPowerUp(t){
 /* ============ NAVES GAME LOOP ============ */
 let lastFrameTime = 0;
 function nvLoop(timestamp){
+  if(!NV.on) return; // Prevent zombie loop when ships.exe is closed
   requestAnimationFrame(nvLoop);
-  if(!NV.on)return;
   
   if(!lastFrameTime) lastFrameTime = timestamp;
   const dt = timestamp - lastFrameTime;
@@ -5485,7 +5491,6 @@ function drawShip(x,y,ax,dashing){
 
   nvCtx.restore();
 }
-requestAnimationFrame(nvLoop);
 addEventListener('resize',function(){ if(NV.on)nvResize(); });
 addEventListener('keydown',function(e){
   if(!NV.on)return;
