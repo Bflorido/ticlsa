@@ -36,10 +36,11 @@
   <div class="dicons">
     <div class="dicon" onclick="handleDiconClick(this,'computer',event)" ondblclick="launchApp('computer')"><span class="ico">💻</span><span class="lbl">My Computer</span></div>
     <div class="dicon" onclick="handleDiconClick(this,'virus',event)" ondblclick="launchApp('virus')"><span class="ico">🛡️</span><span class="lbl">VirusARC.exe</span></div>
-    <div class="dicon" onclick="handleDiconClick(this,'ships',event)" ondblclick="launchApp('ships')"><span class="ico">🚀</span><span class="lbl">ships.exe</span></div>
+    <div class="dicon dicon-ships" onclick="handleDiconClick(this,'ships',event)" ondblclick="launchApp('ships')"><span class="ico ship-vacano-wrap"><svg class="vacano-ship-svg" viewBox="0 0 48 48" width="38" height="38"><defs><filter id="shipGlowDsk" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="0" stdDeviation="2.2" flood-color="#00d4ff" flood-opacity="0.9"/></filter><linearGradient id="hullGradDsk" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="30%" stop-color="#00d4ff"/><stop offset="85%" stop-color="#004488"/><stop offset="100%" stop-color="#02142b"/></linearGradient><linearGradient id="thrusterGradDsk" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="30%" stop-color="#00ffff"/><stop offset="70%" stop-color="#ff00a0"/><stop offset="100%" stop-color="transparent"/></linearGradient></defs><polygon points="20,38 24,47 28,38 25,35 24,37 23,35" fill="url(#thrusterGradDsk)"/><polygon points="12,36 14,43 17,36 15,34" fill="url(#thrusterGradDsk)"/><polygon points="36,36 34,43 31,36 33,34" fill="url(#thrusterGradDsk)"/><polygon points="24,3 30,19 45,34 38,36 32,31 29,38 19,38 16,31 10,36 3,34 18,19" fill="url(#hullGradDsk)" stroke="#00f3ff" stroke-width="1.2" filter="url(#shipGlowDsk)"/><polygon points="24,8 26,19 24,24 22,19" fill="#00ffff" stroke="#ffffff" stroke-width="0.8"/><rect x="2" y="28" width="3" height="7" rx="1.5" fill="#ff0055"/><rect x="43" y="28" width="3" height="7" rx="1.5" fill="#ff0055"/><circle cx="24" cy="18" r="1.5" fill="#ffffff"/></svg></span><span class="lbl">ships.exe</span></div>
     <div class="dicon" onclick="handleDiconClick(this,'browser',event)" ondblclick="launchApp('browser')"><span class="ico">🌐</span><span class="lbl">ARC Browser</span></div>
     <div class="dicon" onclick="handleDiconClick(this,'memes',event)" ondblclick="launchApp('memes')"><span class="ico">📁</span><span class="lbl">My Memes</span></div>
     <div class="dicon" onclick="handleDiconClick(this,'games',event)" ondblclick="launchApp('games')"><span class="ico">🎮</span><span class="lbl">Games</span></div>
+    <div class="dicon" onclick="handleDiconClick(this,'control',event)" ondblclick="launchApp('control')"><span class="ico">🎛️</span><span class="lbl">Control Panel</span></div>
     <div class="dicon" onclick="handleDiconClick(this,'note',event)" ondblclick="launchApp('note')"><span class="ico">📄</span><span class="lbl">README.txt</span></div>
     <div class="dicon" onclick="handleDiconClick(this,'recycle',event)" ondblclick="launchApp('recycle')"><span class="ico">🗑️</span><span class="lbl">Recycle Bin</span></div>
     <div class="dicon" onclick="handleDiconClick(this,'bsod',event)" ondblclick="launchApp('bsod')"><span class="ico">☣️</span><span class="lbl">DO_NOT_TOUCH.exe</span></div>
@@ -241,16 +242,21 @@ C:\ARC> Desktop icons repaired ✓
     <div class="status-bar"><span class="cell"> 6 objects</span><span class="cell">100% Perks Active in ships.exe</span><span class="cell">Follow on X</span></div>
   </div>
 
-  <div class="window" id="win-games" style="left:400px; top:250px; width:380px;">
-    <div class="title-bar purple"><span>🎮 Games — Included with your virus</span>
+  <div class="window" id="win-games" style="left:380px; top:220px; width:450px;">
+    <div class="title-bar purple"><span>🎮 Games Arcade — ARCSYSTEMS Entertainment</span>
       <div class="tb-btns"><button onclick="minimize('win-games')">_</button><button onclick="maxWin('win-games')">□</button><button class="close" onclick="closeWindow('win-games')">✕</button></div></div>
     <div class="window-body">
       <div class="meme-grid games-grid">
-        <div class="meme-tile" style="padding:12px 6px;" onclick="openWindow('win-mines'); msNew();"><div class="mt-icon" style="font-size:36px;">💣</div><div class="mt-name" style="font-size:11px;">Minesweeper</div><span class="mt-badge play">PLAY</span></div>
-        <div class="meme-tile" style="padding:12px 6px;" onclick="openWindow('win-spider'); spiderNew();"><div class="mt-icon" style="font-size:36px;">🕷️</div><div class="mt-name" style="font-size:11px;">Spider Solitaire</div><span class="mt-badge play">PLAY</span></div>
-        <div class="meme-tile" style="padding:12px 6px;" onclick="openWindow('win-pinball')"><div class="mt-icon" style="font-size:36px;">🚀</div><div class="mt-name" style="font-size:11px;">Space Pinball</div><span class="mt-badge play">PLAY</span></div>
+        <div class="meme-tile ships-game-tile" style="padding:10px 6px; border:2px solid #00d4ff; background:radial-gradient(circle,rgba(0,212,255,.22) 0%,rgba(6,14,30,.9) 100%); cursor:pointer;" onclick="openNaves()">
+          <div class="mt-icon"><div class="ship-vacano-wrap"><svg class="vacano-ship-svg" viewBox="0 0 48 48" width="40" height="40"><defs><filter id="shipGlowTile" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="0" stdDeviation="2.2" flood-color="#00d4ff" flood-opacity="0.9"/></filter><linearGradient id="hullGradTile" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="30%" stop-color="#00d4ff"/><stop offset="85%" stop-color="#004488"/><stop offset="100%" stop-color="#02142b"/></linearGradient><linearGradient id="thrusterGradTile" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="30%" stop-color="#00ffff"/><stop offset="70%" stop-color="#ff00a0"/><stop offset="100%" stop-color="transparent"/></linearGradient></defs><polygon points="20,38 24,47 28,38 25,35 24,37 23,35" fill="url(#thrusterGradTile)"/><polygon points="12,36 14,43 17,36 15,34" fill="url(#thrusterGradTile)"/><polygon points="36,36 34,43 31,36 33,34" fill="url(#thrusterGradTile)"/><polygon points="24,3 30,19 45,34 38,36 32,31 29,38 19,38 16,31 10,36 3,34 18,19" fill="url(#hullGradTile)" stroke="#00f3ff" stroke-width="1.2" filter="url(#shipGlowTile)"/><polygon points="24,8 26,19 24,24 22,19" fill="#00ffff" stroke="#ffffff" stroke-width="0.8"/><rect x="2" y="28" width="3" height="7" rx="1.5" fill="#ff0055"/><rect x="43" y="28" width="3" height="7" rx="1.5" fill="#ff0055"/><circle cx="24" cy="18" r="1.5" fill="#ffffff"/></svg></div></div>
+          <div class="mt-name" style="font-size:12px; color:#00d4ff; font-weight:bold;">ships.exe</div>
+          <span class="mt-badge play featured">★ PLAY</span>
+        </div>
+        <div class="meme-tile" style="padding:10px 6px;" onclick="openWindow('win-mines'); msNew();"><div class="mt-icon" style="font-size:36px;">💣</div><div class="mt-name" style="font-size:11px;">Minesweeper</div><span class="mt-badge play">PLAY</span></div>
+        <div class="meme-tile" style="padding:10px 6px;" onclick="openWindow('win-spider'); spiderNew();"><div class="mt-icon" style="font-size:36px;">🕷️</div><div class="mt-name" style="font-size:11px;">Spider Solitaire</div><span class="mt-badge play">PLAY</span></div>
+        <div class="meme-tile" style="padding:10px 6px;" onclick="openWindow('win-pinball')"><div class="mt-icon" style="font-size:36px;">🚀</div><div class="mt-name" style="font-size:11px;">Space Pinball</div><span class="mt-badge play">PLAY</span></div>
       </div>
-      <div style="font-size:11px; margin-top:10px; color:#444; text-align:center;">* <b>ships.exe v4.2</b>: Optimized + ARC Browser 🌐</div>
+      <div style="font-size:11px; margin-top:10px; color:#444; text-align:center;">* <b>ships.exe v4.2 Pro</b>: Bullet-Hell Arcade • Haptics • 60 FPS Turbo</div>
     </div>
   </div>
 
@@ -338,6 +344,278 @@ Signed: The ARC AI.</div>
     </div>
     <div class="status-bar"><span class="cell">Ln 1, Col 1</span><span class="cell">UTF-8</span></div>
   </div>
+
+  <!-- WINDOWS XP CONTROL PANEL (CATEGORY VIEW) -->
+  <div class="window" id="win-control-panel" style="left:200px; top:50px; width:740px; height:530px;">
+    <div class="title-bar"><span>🎛️ Control Panel</span>
+      <div class="tb-btns"><button onclick="minimize('win-control-panel')">_</button><button onclick="maxWin('win-control-panel')">□</button><button class="close" onclick="closeWindow('win-control-panel')">✕</button></div></div>
+    <div class="xp-menubar"><span>File</span><span>Edit</span><span>View</span><span>Favorites</span><span>Tools</span><span>Help</span></div>
+    <div class="xp-toolbar">
+      <button class="xp-tool-btn" onclick="closeWindow('win-control-panel')"><span>⬅</span> Back</button>
+      <button class="xp-tool-btn"><span>➡</span></button>
+      <button class="xp-tool-btn" onclick="openWindow('win-computer')"><span>📁</span> Folders</button>
+    </div>
+    <div class="xp-addressbar"><span>Address:</span><div class="xp-addr-box"><span>🎛️</span> Control Panel</div></div>
+    <div class="window-body" style="padding:0;">
+      <div class="xp-explorer-body">
+        <div class="xp-task-pane">
+          <div class="xp-task-card">
+            <div class="xp-task-head"><span>Control Panel</span></div>
+            <div class="xp-task-list">
+              <a class="xp-task-link" onclick="spawnToast('Switch to Classic View: All items organized in Category View.')"><span>🔄</span> Switch to Classic View</a>
+            </div>
+          </div>
+          <div class="xp-task-card">
+            <div class="xp-task-head"><span>See Also</span></div>
+            <div class="xp-task-list">
+              <a class="xp-task-link" onclick="openWindow('win-sys-props')"><span>💻</span> System Properties</a>
+              <a class="xp-task-link" onclick="openWindow('win-config')"><span>🖼️</span> Display Settings</a>
+              <a class="xp-task-link" onclick="openWindow('win-main'); startScan();"><span>🛡️</span> VirusARC Security</a>
+              <a class="xp-task-link" onclick="spawnToast('❓ Help and Support: Consult the ARC Network manual on X.')"><span>❓</span> Help and Support</a>
+            </div>
+          </div>
+        </div>
+        <div class="xp-main-pane">
+          <div class="cp-cat-header"><span>Pick a category</span></div>
+          <div class="cp-grid">
+            <div class="cp-card" onclick="openWindow('win-config')">
+              <div class="cp-ico">🖥️</div>
+              <div class="cp-info">
+                <div class="cp-name">Appearance and Themes</div>
+                <div class="cp-desc">Change the desktop background, CRT scanlines filter, and Windows XP color schemes.</div>
+              </div>
+            </div>
+            <div class="cp-card" onclick="openWindow('win-sys-props')">
+              <div class="cp-ico">⚡</div>
+              <div class="cp-info">
+                <div class="cp-name">Performance and Maintenance</div>
+                <div class="cp-desc">View system specs, processor speed, clean up RAM, and adjust 60 FPS turbo rendering.</div>
+              </div>
+            </div>
+            <div class="cp-card" onclick="toggleSound(); uiConfirmSfx(); spawnToast('🔊 Master Sound: ' + (soundOn?'ENABLED':'MUTED'));">
+              <div class="cp-ico">🔊</div>
+              <div class="cp-info">
+                <div class="cp-name">Sounds, Speech, and Audio Devices</div>
+                <div class="cp-desc">Toggle procedural 8-bit sound effects, adjust master volume, and test synthesizer.</div>
+              </div>
+            </div>
+            <div class="cp-card" onclick="spawnToast('🌐 ARC Network: Connected • Latency: 14ms • RPC Node #01');">
+              <div class="cp-ico">🌐</div>
+              <div class="cp-info">
+                <div class="cp-name">Network and Internet Connections</div>
+                <div class="cp-desc">Monitor ARC Blockchain network latency, peer nodes, and Web3 wallet bridge.</div>
+              </div>
+            </div>
+            <div class="cp-card" onclick="openWindow('win-main')">
+              <div class="cp-ico">🛡️</div>
+              <div class="cp-info">
+                <div class="cp-name">Security Center & Anti-Virus</div>
+                <div class="cp-desc">Real-time threat shield, virus scan engine, and cryptographic anti-tamper barrier.</div>
+              </div>
+            </div>
+            <div class="cp-card" onclick="testHaptics(); spawnToast('🎮 Controls: Floating Joystick active • Haptics tested');">
+              <div class="cp-ico">🎮</div>
+              <div class="cp-info">
+                <div class="cp-name">Game Controllers & Input</div>
+                <div class="cp-desc">Calibrate dynamic touch joystick, test mobile vibration feedback, and key bindings.</div>
+              </div>
+            </div>
+            <div class="cp-card" onclick="spawnToast('🕒 System Epoch: ' + new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString());">
+              <div class="cp-ico">🕒</div>
+              <div class="cp-info">
+                <div class="cp-name">Date, Time, Language, and Regional</div>
+                <div class="cp-desc">Configure calendar epoch, timezone offsets, and sector chronometer.</div>
+              </div>
+            </div>
+            <div class="cp-card" onclick="changePilotNamePrompt()">
+              <div class="cp-ico">👤</div>
+              <div class="cp-info">
+                <div class="cp-name">User Accounts & Pilot Profile</div>
+                <div class="cp-desc">Change pilot callsign name, flight credentials, and view ARC token assets.</div>
+              </div>
+            </div>
+            <div class="cp-card" onclick="toggleCrtMode()">
+              <div class="cp-ico">♿</div>
+              <div class="cp-info">
+                <div class="cp-name">Accessibility Options</div>
+                <div class="cp-desc">Toggle CRT phosphor scanlines, high-contrast text mode, and UI scaling.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="status-bar"><span class="cell">9 Categories</span><span class="cell">ARCSYSTEMS XP SP3</span><span class="cell">Control Panel</span></div>
+  </div>
+
+  <!-- WINDOWS XP MY COMPUTER EXPLORER -->
+  <div class="window" id="win-computer" style="left:150px; top:40px; width:700px; height:500px;">
+    <div class="title-bar"><span>💻 My Computer</span>
+      <div class="tb-btns"><button onclick="minimize('win-computer')">_</button><button onclick="maxWin('win-computer')">□</button><button class="close" onclick="closeWindow('win-computer')">✕</button></div></div>
+    <div class="xp-menubar"><span>File</span><span>Edit</span><span>View</span><span>Favorites</span><span>Tools</span><span>Help</span></div>
+    <div class="xp-toolbar">
+      <button class="xp-tool-btn" onclick="closeWindow('win-computer')"><span>⬅</span> Back</button>
+      <button class="xp-tool-btn"><span>➡</span></button>
+      <button class="xp-tool-btn" onclick="openWindow('win-computer')"><span>📁</span> Folders</button>
+    </div>
+    <div class="xp-addressbar"><span>Address:</span><div class="xp-addr-box"><span>💻</span> My Computer</div></div>
+    <div class="window-body" style="padding:0;">
+      <div class="xp-explorer-body">
+        <div class="xp-task-pane">
+          <div class="xp-task-card">
+            <div class="xp-task-head"><span>System Tasks</span></div>
+            <div class="xp-task-list">
+              <a class="xp-task-link" onclick="openWindow('win-sys-props')"><span>ℹ️</span> View system information</a>
+              <a class="xp-task-link" onclick="spawnToast('⚙️ Add or Remove Programs: ships.exe is locked to this system.')"><span>➕</span> Add or remove programs</a>
+              <a class="xp-task-link" onclick="openWindow('win-control-panel')"><span>🎛️</span> Change a setting</a>
+            </div>
+          </div>
+          <div class="xp-task-card">
+            <div class="xp-task-head"><span>Other Places</span></div>
+            <div class="xp-task-list">
+              <a class="xp-task-link" onclick="spawnToast('🌐 My Network Places: ARC P2P Node Network (Active)')"><span>🌐</span> My Network Places</a>
+              <a class="xp-task-link" onclick="openWindow('win-memes')"><span>📁</span> My Documents</a>
+              <a class="xp-task-link" onclick="openWindow('win-control-panel')"><span>🎛️</span> Control Panel</a>
+            </div>
+          </div>
+          <div class="xp-task-card">
+            <div class="xp-task-head"><span>Details</span></div>
+            <div class="xp-task-list">
+              <div style="font-size:10.5px; color:#333;"><b>My Computer</b><br>System Folder<br>6 Drives Connected</div>
+            </div>
+          </div>
+        </div>
+        <div class="xp-main-pane">
+          <div class="xp-sec-title"><span>📁</span> Files Stored on This Computer</div>
+          <div class="xp-drives-grid">
+            <div class="xp-drive-tile" onclick="openWindow('win-memes')">
+              <div class="d-ico">📁</div>
+              <div class="xp-drive-info">
+                <div class="xp-drive-title">Shared Documents</div>
+                <div class="xp-drive-sub">File Folder</div>
+              </div>
+            </div>
+            <div class="xp-drive-tile" onclick="openWindow('win-memes')">
+              <div class="d-ico">📁</div>
+              <div class="xp-drive-info">
+                <div class="xp-drive-title">Pilot's Vault</div>
+                <div class="xp-drive-sub">Meme Storage</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="xp-sec-title"><span>💽</span> Hard Disk Drives</div>
+          <div class="xp-drives-grid">
+            <div class="xp-drive-tile" onclick="spawnToast('💽 Local Disk (C:): 42.4 GB free of 64.0 GB • ARC-FS NTFS');">
+              <div class="d-ico">💽</div>
+              <div class="xp-drive-info">
+                <div class="xp-drive-title">Local Disk (C:)</div>
+                <div class="xp-drive-sub">42.4 GB free / 64.0 GB</div>
+                <div class="xp-disk-bar"><div class="xp-disk-fill" style="width:34%;"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="xp-sec-title"><span>💾</span> Devices with Removable Storage</div>
+          <div class="xp-drives-grid">
+            <div class="xp-drive-tile" onclick="sfx(200,0.1,'square'); spawnToast('💾 3½ Floppy (A:): Please insert a diskette into drive A:.');">
+              <div class="d-ico">💾</div>
+              <div class="xp-drive-info">
+                <div class="xp-drive-title">3½ Floppy (A:)</div>
+                <div class="xp-drive-sub">1.44 MB Floppy</div>
+              </div>
+            </div>
+            <div class="xp-drive-tile" onclick="sfx(600,0.15,'sawtooth'); spawnToast('💿 CD Drive (D:) [ARC_XP_SP3]: Gold Master Installation Disc.');">
+              <div class="d-ico">💿</div>
+              <div class="xp-drive-info">
+                <div class="xp-drive-title">CD Drive (D:) ARC_SP3</div>
+                <div class="xp-drive-sub">Compact Disc (650 MB)</div>
+              </div>
+            </div>
+            <div class="xp-drive-tile" onclick="openWindow('win-memes')">
+              <div class="d-ico">🔌</div>
+              <div class="xp-drive-info">
+                <div class="xp-drive-title">USB Drive (E:) MEMES</div>
+                <div class="xp-drive-sub">128 MB Flash Drive</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="xp-sec-title"><span>🌐</span> Network Drives</div>
+          <div class="xp-drives-grid">
+            <div class="xp-drive-tile" onclick="spawnToast('🌐 ARC Cluster (Z:): Decentralized Storage Node Connected.');">
+              <div class="d-ico">🌐</div>
+              <div class="xp-drive-info">
+                <div class="xp-drive-title">ARC Storage (Z:)</div>
+                <div class="xp-drive-sub">Infinite Cloud Capacity</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="status-bar"><span class="cell">6 objects</span><span class="cell">My Computer</span><span class="cell">Local intranet</span></div>
+  </div>
+
+  <!-- WINDOWS XP SYSTEM PROPERTIES (PC SPECS, YEAR, PROCESSOR) -->
+  <div class="window" id="win-sys-props" style="left:280px; top:70px; width:430px;">
+    <div class="title-bar"><span>System Properties</span>
+      <div class="tb-btns"><button class="close" onclick="closeWindow('win-sys-props')">✕</button></div></div>
+    <div class="window-body sys-props-wrap">
+      <div class="sys-tab-bar">
+        <div class="sys-tab active" id="tabSysGeneral" onclick="switchSysTab('general', this)">General</div>
+        <div class="sys-tab" id="tabSysComputer" onclick="switchSysTab('computer', this)">Computer Name</div>
+        <div class="sys-tab" id="tabSysHardware" onclick="switchSysTab('hardware', this)">Hardware</div>
+        <div class="sys-tab" id="tabSysAdvanced" onclick="switchSysTab('advanced', this)">Advanced</div>
+      </div>
+      <div class="sys-general-body" id="sysTabGeneral">
+        <div class="sys-hero">
+          <div class="sys-xp-logo">
+            <small>Microsoft®</small>
+            <b>ARC XP</b>
+            <small>Professional</small>
+          </div>
+          <div class="sys-info-block">
+            <h4>System:</h4>
+            <div>ARCSYSTEMS XP Professional</div>
+            <div>Version 2004</div>
+            <div>Service Pack 3 (ARC Quantum Edition)</div>
+            <div style="margin-top:4px; font-weight:bold; color:#005500;">Year of System: 2004 / 2026 Retro Edition</div>
+          </div>
+        </div>
+        <div class="sys-specs-grid">
+          <div class="sys-pc-icon">💻</div>
+          <div class="sys-specs-text">
+            <div><b>Registered to:</b></div>
+            <div id="sysPropsPilot">Pilot Rookie</div>
+            <div>ARC Studios & Cybernetics Inc.</div>
+            <div style="color:#666;">55274-OEM-0145293-89942</div>
+            <div style="margin-top:8px;"><b>Computer:</b></div>
+            <div>Intel(R) Pentium(R) 4 CPU 3.20GHz</div>
+            <div>Hyper-Threading Technology (Quantum ARC Core)</div>
+            <div>2.00 GB of RAM (Active Video Acceleration)</div>
+            <div>NVIDIA GeForce FX 5900 Ultra (ARC Direct3D)</div>
+            <div>DirectX 9.0c Hardware Synchronized (60 FPS Turbo)</div>
+          </div>
+        </div>
+      </div>
+      <div class="sys-general-body" id="sysTabOther" style="display:none;">
+        <div style="padding:10px; line-height:1.5;">
+          <h4 style="color:#003399; margin-bottom:6px;">Device & System Diagnostics:</h4>
+          <div>• <b>Computer Name:</b> ARCSYSTEMS-PILOT-PC</div>
+          <div>• <b>Workgroup:</b> WORKGROUP_ARC</div>
+          <div>• <b>Hardware Manager:</b> All drivers working properly ✓</div>
+          <div>• <b>Virtual Memory Paging:</b> 4096 MB Swap File Allocated</div>
+          <div>• <b>DirectSound Driver:</b> Creative SB Audigy 2 ZS (Low Latency)</div>
+        </div>
+      </div>
+      <div class="sys-dlg-btns">
+        <button class="btn98" onclick="closeWindow('win-sys-props')">OK</button>
+        <button class="btn98" onclick="closeWindow('win-sys-props')">Cancel</button>
+        <button class="btn98" onclick="spawnToast('Settings Applied ✓')">Apply</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="ctx-menu" id="ctxMenu">
@@ -348,10 +626,10 @@ Signed: The ARC AI.</div>
   <div class="ctx-item" data-a="cut"><span class="ci">✂️</span>Cut</div>
   <div class="ctx-item" data-a="new"><span class="ci">🆕</span>New ▸</div>
   <div class="ctx-sep"></div>
-  <div class="ctx-item" data-a="personalize"><span class="ci">🖼️</span>Personalize desktop...</div>
-  <div class="ctx-item" data-a="config"><span class="ci">🎛️</span>VirusARC Settings</div>
+  <div class="ctx-item" data-a="personalize"><span class="ci">🖼️</span>Display Properties (Themes & Wallpapers)...</div>
+  <div class="ctx-item" data-a="control"><span class="ci">🎛️</span>Control Panel</div>
   <div class="ctx-sep"></div>
-  <div class="ctx-item" data-a="props"><span class="ci">💻</span>Properties</div>
+  <div class="ctx-item" data-a="sysprops"><span class="ci">💻</span>System Properties (PC Specs & Year)...</div>
 </div>
 
 <div class="ad-overlay" id="adOverlay">
@@ -393,7 +671,10 @@ Signed: The ARC AI.</div>
     <button class="tb-win" id="tb-win-spider" onclick="taskClick('win-spider')" style="display:none;">🕷️ Spider</button>
     <button class="tb-win" id="tb-win-pinball" onclick="taskClick('win-pinball')" style="display:none;">🚀 Pinball</button>
     <button class="tb-win" id="tb-win-note" onclick="taskClick('win-note')">📄 README.txt</button>
-    <button class="tb-win" id="tb-win-config" onclick="taskClick('win-config')" style="display:none;">🎛️ Control Panel</button>
+    <button class="tb-win" id="tb-win-config" onclick="taskClick('win-config')" style="display:none;">🖼️ Display Settings</button>
+    <button class="tb-win" id="tb-win-control-panel" onclick="taskClick('win-control-panel')" style="display:none;">🎛️ Control Panel</button>
+    <button class="tb-win" id="tb-win-computer" onclick="taskClick('win-computer')" style="display:none;">💻 My Computer</button>
+    <button class="tb-win" id="tb-win-sys-props" onclick="taskClick('win-sys-props')" style="display:none;">💻 System Properties</button>
   </div>
   <div class="tray"><span>🛡️</span><span>🔊</span><span id="clock">--:--</span></div>
 </div>
@@ -411,7 +692,7 @@ Signed: The ARC AI.</div>
     <div class="sm-left">
       <div class="sm-item" onclick="openWindow('win-main'); toggleStart();"><span class="ic">🛡️</span> VirusARC.exe</div>
       <div class="sm-item" onclick="openWindow('win-browser'); toggleStart();"><span class="ic">🌐</span> ARC Browser</div>
-      <div class="sm-item" onclick="toggleStart(); openNaves();"><span class="ic">🚀</span> ships.exe</div>
+      <div class="sm-item" onclick="toggleStart(); openNaves();"><span class="ic ship-vacano-wrap" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;"><svg class="vacano-ship-svg" viewBox="0 0 48 48" width="18" height="18"><polygon points="20,38 24,47 28,38 25,35 24,37 23,35" fill="#00d4ff"/><polygon points="24,3 30,19 45,34 38,36 32,31 29,38 19,38 16,31 10,36 3,34 18,19" fill="#00d4ff" stroke="#fff" stroke-width="1.5"/><polygon points="24,8 26,19 24,24 22,19" fill="#fff"/></svg></span> ships.exe</div>
       <div class="sm-item" onclick="openWindow('win-memes'); toggleStart();"><span class="ic">📁</span> My Memes Vault</div>
       <div class="sm-item" onclick="openWindow('win-games'); toggleStart();"><span class="ic">🎮</span> Games Arcade</div>
       <div class="sm-item" onclick="openWindow('win-note'); toggleStart();"><span class="ic">📄</span> README.txt</div>
@@ -420,9 +701,11 @@ Signed: The ARC AI.</div>
       <div class="sm-item" onclick="toggleStart(); showAd();"><span class="ic">💳</span> Renew 12 months</div>
     </div>
     <div class="sm-right">
-      <div class="sm-item" onclick="openWindow('win-config'); toggleStart();"><span class="ic">🎛️</span> Control Panel</div>
+      <div class="sm-item" onclick="openWindow('win-computer'); toggleStart();"><span class="ic">💻</span> My Computer</div>
       <div class="sm-item" onclick="openWindow('win-memes'); toggleStart();"><span class="ic">🖼️</span> My Memes</div>
+      <div class="sm-item" onclick="openWindow('win-control-panel'); toggleStart();"><span class="ic">🎛️</span> Control Panel</div>
       <div class="sm-item" onclick="openWindow('win-config'); toggleStart();"><span class="ic">⚙️</span> Display Settings</div>
+      <div class="sm-item" onclick="openWindow('win-sys-props'); toggleStart();"><span class="ic">ℹ️</span> System Properties</div>
       <div class="sm-sep"></div>
       <div class="sm-item" onclick="spawnToast('❓ Help: Join the ARC community on X / Telegram for 24/7 support!')"><span class="ic">❓</span> Help & Support</div>
     </div>

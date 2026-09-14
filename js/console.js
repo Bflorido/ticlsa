@@ -369,8 +369,9 @@ ctxMenu.addEventListener('click',function(e){
   if(a==='paste')spawnToast('📥 Pasted: a cute virus joined.');
   if(a==='cut')spawnToast('✂️ Cut: the ARC Network forbids cutting memes.');
   if(a==='new')spawnToast('🆕 New → memes.txt created (lie).');
-  if(a==='personalize'||a==='config')openWindow('win-config');
-  if(a==='props')openWindow('win-config'); });
+  if(a==='personalize')openWindow('win-config');
+  if(a==='control')openWindow('win-control-panel');
+  if(a==='sysprops'||a==='props'||a==='config')openWindow('win-sys-props'); });
 
 /* ============ WINDOWS MANAGEMENT ============ */
 let zTop=600;
@@ -380,7 +381,9 @@ function openWindow(id){ const w=document.getElementById(id); if(!w)return; w.cl
   if(id==='win-browser'){
     clearAllPopups(); // silence virus popups while browsing
     if(typeof browserTabs !== 'undefined' && browserTabs.length===0){ newTab(); }
-  } }
+  }
+  if(id==='win-sys-props'){ updateSysPropsPilot(); }
+}
 function closeWindow(id){ const w=document.getElementById(id); if(!w)return; w.classList.remove('open'); w.style.display='none'; uiWindowSfx('close'); refreshTask(); }
 function minimize(id){ const w=document.getElementById(id); if(!w)return; w.style.display='none'; uiWindowSfx('min'); refreshTask(); }
 function maxWin(id){ const w=document.getElementById(id); if(!w)return;
@@ -393,7 +396,7 @@ function taskClick(id){ const w=document.getElementById(id); if(!w)return;
   if(w.style.display==='none'||!w.classList.contains('open'))openWindow(id);
   else if(parseInt(w.style.zIndex)===zTop)minimize(id); else focusWin(w); }
 function refreshTask(){
-  ['win-main','win-browser','win-memes','win-note','win-games','win-mines','win-spider','win-pinball','win-config'].forEach(function(id){
+  ['win-main','win-browser','win-memes','win-note','win-games','win-mines','win-spider','win-pinball','win-config','win-control-panel','win-computer','win-sys-props'].forEach(function(id){
     const w=document.getElementById(id), b=document.getElementById('tb-'+id);
     if(!b || !w) return;
     // Taskbar shows ONLY currently-open apps; minimized ones stay but dimmed
@@ -1757,6 +1760,7 @@ function nvStart(){
   NV.bullets=[]; NV.missiles=[]; NV.ebullets=[]; NV.enemies=[]; NV.asteroids=[]; NV.scraps=[]; NV.pows=[];
   NV.orbitals=[]; NV.railgunT=0;
   NV.debris=[]; NV.rings=[]; NV.groups=[];
+  NV.roundDropCounts = {}; NV.lastDrops = [];
   for(let i=0;i<MAX_PARTS;i++) partsPool[i].active=false;
   for(let i=0;i<MAX_BULLETS;i++) bulletPool[i].active=false;
   for(let i=0;i<MAX_EBULLETS;i++) ebulletPool[i].active=false;
@@ -1839,6 +1843,8 @@ function clearArena(){
 function nextRound(){
   NV.state='playing';
   NV.round++;
+  NV.roundDropCounts = {};
+  NV.lastDrops = [];
   // Strictly ensure score starts at zero on Sector 1 start
   if(NV.round===1){
     NV.score=0;
@@ -2240,16 +2246,61 @@ function killEnemy(e,idx,givePow){
   }
 }
 function randomPowerUp(){
-  const r=Math.random();
-  if(NV && NV.lives === 1 && r < 0.25) return '+'; // Critical pity
-  if(r < 0.14) return 'piper';  // 14% Piper Symphony
-  if(r < 0.24) return 'circle'; // 10% Circle Drones & Grav Well
-  if(r < 0.36) return 'usdc';   // 12% USDC Shield
-  if(r < 0.50) return 'E';      // 14% EMP Weapon Lock
-  if(r < 0.60) return '+';      // 10% Core Repair +1 Life
-  if(r < 0.74) return 'Y';      // 14% Cryo Freeze 2x DMG
-  if(r < 0.86) return 'P';      // 12% Phase Ghost
-  return 'B';                   // 14% Thermonuclear Bomb
+  // 1. Critical Pity: If user has only 1 life, Core Repair keeps a 30% emergency pity chance
+  if(NV && NV.lives === 1 && Math.random() < 0.30) {
+    if(!NV.roundDropCounts) NV.roundDropCounts = {};
+    NV.roundDropCounts['+'] = (NV.roundDropCounts['+'] || 0) + 1;
+    return '+';
+  }
+
+  if(!NV.roundDropCounts) NV.roundDropCounts = {};
+  if(!NV.lastDrops) NV.lastDrops = [];
+
+  const candidates = [
+    { id: 'piper',  baseWeight: 14 },
+    { id: 'circle', baseWeight: 12 },
+    { id: 'usdc',   baseWeight: 12 },
+    { id: 'E',      baseWeight: 14 },
+    { id: '+',      baseWeight: 10 },
+    { id: 'Y',      baseWeight: 14 },
+    { id: 'P',      baseWeight: 12 },
+    { id: 'B',      baseWeight: 12 }
+  ];
+
+  // Anti-repeat weighting algorithm:
+  // - Consecutive Drop Penalty: If it dropped immediately on the previous drop, reduce chance by 85%
+  // - Near Streak Penalty: If it dropped 2 drops ago, reduce chance by 50%
+  // - Round Saturation Penalty: Each drop of the same type in this round reduces weight by (1 + count * 1.6)
+  let totalWeight = 0;
+  const weighted = candidates.map(function(c){
+    let w = c.baseWeight;
+    const count = NV.roundDropCounts[c.id] || 0;
+    w = w / (1 + count * 1.6);
+    if(NV.lastDrops.length > 0 && NV.lastDrops[NV.lastDrops.length - 1] === c.id){
+      w *= 0.15; // Anti-streak: prevents back-to-back duplicate drops
+    } else if(NV.lastDrops.length > 1 && NV.lastDrops[NV.lastDrops.length - 2] === c.id){
+      w *= 0.50;
+    }
+    totalWeight += w;
+    return { id: c.id, w: w };
+  });
+
+  let roll = Math.random() * totalWeight;
+  let chosen = 'circle';
+  for(let i = 0; i < weighted.length; i++){
+    if(roll < weighted[i].w){
+      chosen = weighted[i].id;
+      break;
+    }
+    roll -= weighted[i].w;
+  }
+
+  // Record drop in round history
+  NV.roundDropCounts[chosen] = (NV.roundDropCounts[chosen] || 0) + 1;
+  NV.lastDrops.push(chosen);
+  if(NV.lastDrops.length > 3) NV.lastDrops.shift();
+
+  return chosen;
 }
 function detonateAsteroid(a,idx){
   nvBoom(a.x,a.y,1.6,'volatile'); NV.rings.push({x:a.x,y:a.y,r:10,max:170});
@@ -3843,7 +3894,9 @@ function filterArcCmd(q){
 /* ============ UNIFIED DESKTOP & MOBILE APP LAUNCHER ============ */
 function launchApp(action){
   try{ sfx(700, 0.05, 'triangle', 0.06); }catch(e){}
-  if(action === 'computer') spawnToast('💻 My Computer: 500M tokens stored in C:\\ARC');
+  if(action === 'computer') openWindow('win-computer');
+  else if(action === 'control') openWindow('win-control-panel');
+  else if(action === 'sysprops') openWindow('win-sys-props');
   else if(action === 'virus') openWindow('win-main');
   else if(action === 'ships') openNaves();
   else if(action === 'browser') openWindow('win-browser');
@@ -3853,6 +3906,46 @@ function launchApp(action){
   else if(action === 'recycle') spawnPopup();
   else if(action === 'bsod') showBsod('DO_NOT_TOUCH.exe');
   else if(action === 'config') openWindow('win-config');
+}
+
+function switchSysTab(tab, el){
+  document.querySelectorAll('.sys-tab').forEach(function(t){ t.classList.remove('active'); });
+  if(el) el.classList.add('active');
+  const gen = document.getElementById('sysTabGeneral');
+  const oth = document.getElementById('sysTabOther');
+  if(!gen || !oth) return;
+  if(tab === 'general'){
+    gen.style.display = 'block';
+    oth.style.display = 'none';
+  } else {
+    gen.style.display = 'none';
+    oth.style.display = 'block';
+  }
+}
+
+function updateSysPropsPilot(){
+  const el = document.getElementById('sysPropsPilot');
+  if(!el) return;
+  const name = localStorage.getItem('arc_last_pilot') || 'PILOT ROOKIE';
+  el.textContent = name;
+}
+
+function changePilotNamePrompt(){
+  const cur = localStorage.getItem('arc_last_pilot') || 'ROOKIE';
+  const n = prompt('Enter your Pilot Callsign Name:', cur);
+  if(n && n.trim()){
+    const clean = n.trim().toUpperCase().substring(0, 16);
+    localStorage.setItem('arc_last_pilot', clean);
+    updateSysPropsPilot();
+    updatePilotPlate();
+    spawnToast('👤 Pilot Callsign updated: ' + clean);
+  }
+}
+
+function testHaptics(){
+  if(typeof HapticEngine !== 'undefined'){
+    HapticEngine.trigger('squadClear');
+  }
 }
 
 let _lastIconClick = 0, _lastIconTarget = null;
