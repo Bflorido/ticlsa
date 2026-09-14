@@ -1976,7 +1976,14 @@ function playerHit(){
       document.getElementById('lbSaveMsg').textContent='';
       document.getElementById('nvHUD').classList.remove('show');
       nvShow('nvOver');
-      setTimeout(function(){ document.getElementById('nvPilotName').focus(); },100);
+      const curPilot = (NV.pilotName || lastPilot).trim();
+      const curWallet = (NV.pilotWallet || lastWallet).trim();
+      if(/^0x[a-fA-F0-9]{40}$/i.test(curWallet)){
+        // Automatically save record to leaderboard once game finishes!
+        saveLeaderboard(true);
+      } else {
+        setTimeout(function(){ document.getElementById('nvPilotName').focus(); },100);
+      }
       explosionSfx(1.6);
     },1500);
   }
@@ -2041,7 +2048,8 @@ function doDash(){
   const m=Math.hypot(dxp,dyp);
   const ox=p.x, oy=p.y;
   p.x=Math.max(26,Math.min(innerWidth-26,p.x+(dxp/m)*120));
-  p.y=Math.max(60,Math.min(innerHeight-40,p.y+(dyp/m)*120));
+  const maxTeleportY = (typeof isMobile !== 'undefined' && isMobile) || innerWidth <= 768 ? (innerHeight - 85) : (innerHeight - 40);
+  p.y=Math.max(60,Math.min(maxTeleportY,p.y+(dyp/m)*120));
   // Bullet-clearing warp wake between old and new position
   for(let j=NV.ebullets.length-1;j>=0;j--){
     const eb=NV.ebullets[j];
@@ -2293,27 +2301,46 @@ function updateOrInsertRecord(list, newEntry){
 
 function syncPostRecord(entry){
   try {
-    fetch('api/records.php', {
+    // Try Vercel Serverless Function first (/api/records -> api/records-node.js via vercel.json)
+    fetch('api/records', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ entry: entry })
     }).then(function(res){
-      if(!res.ok) throw new Error();
+      if(!res.ok) throw new Error('Vercel API fail, try PHP');
       return res.json();
     }).then(function(data){
       if(data && Array.isArray(data.allTime)) saveAllTimeData(data.allTime);
       if(data && Array.isArray(data.weekly)) saveWeeklyData(data.weekly);
       renderLeaderboard(entry.name);
     }).catch(function(){
-      // Offline fallback: records already stored in localStorage
+      // Fallback to Hostinger / PHP server
+      fetch('api/records.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entry: entry })
+      }).then(function(res){
+        if(!res.ok) throw new Error();
+        return res.json();
+      }).then(function(data){
+        if(data && Array.isArray(data.allTime)) saveAllTimeData(data.allTime);
+        if(data && Array.isArray(data.weekly)) saveWeeklyData(data.weekly);
+        renderLeaderboard(entry.name);
+      }).catch(function(){
+        // Offline fallback: records already stored in localStorage
+      });
     });
   } catch(e){}
 }
 
 function syncGetRecords(){
   try {
-    fetch('api/records.php', { method: 'GET' })
-      .then(function(res){ if(!res.ok) throw new Error(); return res.json(); })
+    // Try Vercel Serverless Function first (/api/records)
+    fetch('api/records', { method: 'GET' })
+      .then(function(res){
+        if(!res.ok) throw new Error('Vercel API fail, try PHP');
+        return res.json();
+      })
       .then(function(data){
         if(data && Array.isArray(data.allTime)){
           let mergedAll = getAllTimeData();
@@ -2326,33 +2353,50 @@ function syncGetRecords(){
           saveWeeklyData(mergedWk);
         }
         renderLeaderboard();
-      }).catch(function(){});
+      }).catch(function(){
+        // Fallback to Hostinger / PHP server
+        fetch('api/records.php', { method: 'GET' })
+          .then(function(res){ if(!res.ok) throw new Error(); return res.json(); })
+          .then(function(data){
+            if(data && Array.isArray(data.allTime)){
+              let mergedAll = getAllTimeData();
+              data.allTime.forEach(function(e){ mergedAll = updateOrInsertRecord(mergedAll, e); });
+              saveAllTimeData(mergedAll);
+            }
+            if(data && Array.isArray(data.weekly)){
+              let mergedWk = getWeeklyData();
+              data.weekly.forEach(function(e){ mergedWk = updateOrInsertRecord(mergedWk, e); });
+              saveWeeklyData(mergedWk);
+            }
+            renderLeaderboard();
+          }).catch(function(){});
+      });
   } catch(e){}
 }
 
-function saveLeaderboard(){
+function saveLeaderboard(auto){
   const nameInput=document.getElementById('nvPilotName');
-  const name=(nameInput.value||'PILOT').trim().toUpperCase().slice(0,10)||'PILOT';
+  const name=(nameInput ? (nameInput.value||NV.pilotName||localStorage.getItem('arc_last_pilot')||'PILOT') : (NV.pilotName||'PILOT')).trim().toUpperCase().slice(0,10)||'PILOT';
 
   const walletInput=document.getElementById('nvPilotWallet');
-  const wallet=(walletInput ? walletInput.value : '').trim();
+  const wallet=(walletInput && walletInput.value ? walletInput.value : (NV.pilotWallet||localStorage.getItem('arc_last_wallet')||'')).trim();
   const isEvmWallet = /^0x[a-fA-F0-9]{40}$/i.test(wallet);
   const msgEl = document.getElementById('lbSaveMsg');
 
   if(!wallet){
-    if(msgEl){
+    if(!auto && msgEl){
       msgEl.style.color = '#ff003c';
       msgEl.textContent = '⚠️ MetaMask / EVM Wallet is required!';
     }
-    if(walletInput) walletInput.focus();
+    if(!auto && walletInput) walletInput.focus();
     return;
   }
   if(!isEvmWallet){
-    if(msgEl){
+    if(!auto && msgEl){
       msgEl.style.color = '#ff003c';
       msgEl.textContent = '⚠️ Invalid Wallet! Must be 0x followed by 40 hex characters.';
     }
-    if(walletInput) walletInput.focus();
+    if(!auto && walletInput) walletInput.focus();
     return;
   }
 
@@ -2382,13 +2426,15 @@ function saveLeaderboard(){
 
   if(msgEl){
     msgEl.style.color = '#00ff41';
-    msgEl.textContent='✅ Pilot record cryptographically signed & saved: '+name;
+    msgEl.textContent= auto ? '⚡ Record auto-saved to leaderboard!' : ('✅ Pilot record cryptographically signed & saved: '+name);
   }
-  setTimeout(function(){
-    switchLbTab(isNewAbsolute ? 'alltime' : (NV.activeTab || 'weekly'));
-    renderLeaderboard(name);
-    nvShow('nvLeaderboard');
-  }, 800);
+  if(!auto){
+    setTimeout(function(){
+      switchLbTab(isNewAbsolute ? 'alltime' : (NV.activeTab || 'weekly'));
+      renderLeaderboard(name);
+      nvShow('nvLeaderboard');
+    }, 800);
+  }
 }
 
 function renderLeaderboard(highlight){
@@ -3799,7 +3845,9 @@ function nvLoop(timestamp){
     p.y += ay * 6.5 * dtScale;
     if(p.dashT>0){ p.dashT--; p.x+=p.face*16*dtScale; p.ghosts.push({x:p.x,y:p.y,l:12}); }
     p.ghosts=p.ghosts.filter(function(g){ g.l--; return g.l>0; });
-    p.x=Math.max(30,Math.min(W-30,p.x)); p.y=Math.max(H*.4,Math.min(H-55,p.y));
+    const isMobDevice = (typeof isMobile !== 'undefined' && isMobile) || innerWidth <= 768;
+    const bottomBound = isMobDevice ? (H - 95) : (H - 55);
+    p.x=Math.max(30,Math.min(W-30,p.x)); p.y=Math.max(H*.35,Math.min(bottomBound,p.y));
     if(p.cd>0)p.cd--; if(p.inv>0)p.inv--; if(p.triple>0)p.triple--; if(p.shield>0)p.shield--;
 
     // Update touch button cooldown states on mobile
@@ -5038,7 +5086,9 @@ function nvLoop(timestamp){
 }
 function drawShip(x,y,ax,dashing){
   nvCtx.save(); nvCtx.translate(x,y); nvCtx.rotate(-ax*.14);
-  nvCtx.scale(1.28,1.28); // Bigger player ship
+  const isMob = (typeof isMobile !== 'undefined' && isMobile) || (window.innerWidth <= 768);
+  const shipScale = isMob ? 0.95 : 1.28;
+  nvCtx.scale(shipScale, shipScale);
 
   // Dual plasma thruster halos at the bottom legs of the Arc logo (x = -17 and x = +18)
   nvCtx.save(); nvCtx.globalCompositeOperation='lighter';

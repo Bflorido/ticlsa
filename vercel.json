@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/records",
+      "destination": "/api/records-node.js"
+    }
+  ]
+}
