@@ -3081,7 +3081,12 @@ function computeRecordSigV1(entry){
 }
 
 function verifyRecordIntegrity(entry){
-  if(!entry || typeof entry.score !== 'number' || typeof entry.name !== 'string' || !entry._sig) return false;
+  if(!entry || typeof entry.name !== 'string') return false;
+  // Ensure score is a number (MySQL/JSON may send it as string)
+  if(typeof entry.score === 'string') entry.score = parseInt(entry.score, 10);
+  if(typeof entry.score !== 'number' || isNaN(entry.score)) return false;
+  // Records coming from the server DB may not have a _sig (they were validated server-side)
+  if(!entry._sig) return true;
   // Accept both v2 (current) and legacy v1 signatures so old records survive the upgrade
   return entry._sig === computeRecordSig(entry) || entry._sig === computeRecordSigV1(entry);
 }
@@ -3127,14 +3132,18 @@ function deduplicateAndRank(list, maxLimit){
       score: entry.score,
       round: entry.round || 1,
       date: entry.date || new Date().toLocaleDateString('en-US'),
+      _ts: entry._ts || 0,
+      _n: entry._n || '',
       _sig: entry._sig || computeRecordSig({ name: cleanName, score: entry.score, round: entry.round || 1, date: entry.date || '' })
     };
-    if(!map.has(cleanName)){
-      map.set(cleanName, normalized);
+    // Unicidad estricta: ninguna billetera puede tener registros duplicados
+    const uniqueKey = cleanWallet ? ('w:' + cleanWallet.toLowerCase()) : ('n:' + cleanName);
+    if(!map.has(uniqueKey)){
+      map.set(uniqueKey, normalized);
     } else {
-      const existing = map.get(cleanName);
+      const existing = map.get(uniqueKey);
       if(normalized.score > existing.score || (normalized.score === existing.score && normalized.round > existing.round)){
-        map.set(cleanName, normalized);
+        map.set(uniqueKey, normalized);
       }
     }
   }
@@ -3240,8 +3249,8 @@ function syncPostRecord(entry){
       if(!res.ok) throw new Error('Vercel API fail, try PHP');
       return res.json();
     }).then(function(data){
-      if(data && Array.isArray(data.allTime)) saveAllTimeData(data.allTime);
-      if(data && Array.isArray(data.weekly)) saveWeeklyData(data.weekly);
+      if(data && Array.isArray(data.allTime)) saveAllTimeData(data.allTime.map(normalizeServerEntry));
+      if(data && Array.isArray(data.weekly)) saveWeeklyData(data.weekly.map(normalizeServerEntry));
       renderLeaderboard(entry.name);
     }).catch(function(){
       // Fallback to Hostinger / PHP server
@@ -3253,14 +3262,21 @@ function syncPostRecord(entry){
         if(!res.ok) throw new Error();
         return res.json();
       }).then(function(data){
-        if(data && Array.isArray(data.allTime)) saveAllTimeData(data.allTime);
-        if(data && Array.isArray(data.weekly)) saveWeeklyData(data.weekly);
+        if(data && Array.isArray(data.allTime)) saveAllTimeData(data.allTime.map(normalizeServerEntry));
+        if(data && Array.isArray(data.weekly)) saveWeeklyData(data.weekly.map(normalizeServerEntry));
         renderLeaderboard(entry.name);
       }).catch(function(){
         // Offline fallback: records already stored in localStorage
       });
     });
   } catch(e){}
+}
+
+function normalizeServerEntry(e){
+  // MySQL returns numeric columns as strings over JSON — cast them
+  if(e && typeof e.score === 'string') e.score = parseInt(e.score, 10) || 0;
+  if(e && typeof e.round === 'string') e.round = parseInt(e.round, 10) || 1;
+  return e;
 }
 
 function syncGetRecords(){
@@ -3273,14 +3289,10 @@ function syncGetRecords(){
       })
       .then(function(data){
         if(data && Array.isArray(data.allTime)){
-          let mergedAll = getAllTimeData();
-          data.allTime.forEach(function(e){ mergedAll = updateOrInsertRecord(mergedAll, e); });
-          saveAllTimeData(mergedAll);
+          saveAllTimeData(data.allTime.map(normalizeServerEntry));
         }
         if(data && Array.isArray(data.weekly)){
-          let mergedWk = getWeeklyData();
-          data.weekly.forEach(function(e){ mergedWk = updateOrInsertRecord(mergedWk, e); });
-          saveWeeklyData(mergedWk);
+          saveWeeklyData(data.weekly.map(normalizeServerEntry));
         }
         renderLeaderboard();
       }).catch(function(){
@@ -3289,14 +3301,10 @@ function syncGetRecords(){
           .then(function(res){ if(!res.ok) throw new Error(); return res.json(); })
           .then(function(data){
             if(data && Array.isArray(data.allTime)){
-              let mergedAll = getAllTimeData();
-              data.allTime.forEach(function(e){ mergedAll = updateOrInsertRecord(mergedAll, e); });
-              saveAllTimeData(mergedAll);
+              saveAllTimeData(data.allTime.map(normalizeServerEntry));
             }
             if(data && Array.isArray(data.weekly)){
-              let mergedWk = getWeeklyData();
-              data.weekly.forEach(function(e){ mergedWk = updateOrInsertRecord(mergedWk, e); });
-              saveWeeklyData(mergedWk);
+              saveWeeklyData(data.weekly.map(normalizeServerEntry));
             }
             renderLeaderboard();
           }).catch(function(){});

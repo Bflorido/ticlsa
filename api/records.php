@@ -96,13 +96,15 @@ function deduplicateAndRank($list, $limit = 100) {
         $name = strtoupper(trim((string)$item['name']));
         $score = (int)$item['score'];
         $round = isset($item['round']) ? (int)$item['round'] : 1;
-        if (!isset($map[$name])) {
-            $map[$name] = $item;
+        $walletKey = !empty($item['wallet']) ? strtolower(trim((string)$item['wallet'])) : '';
+        $dedupKey = !empty($walletKey) ? 'w:' . $walletKey : 'n:' . $name;
+        if (!isset($map[$dedupKey])) {
+            $map[$dedupKey] = $item;
         } else {
-            $existingScore = (int)$map[$name]['score'];
-            $existingRound = isset($map[$name]['round']) ? (int)$map[$name]['round'] : 1;
+            $existingScore = (int)$map[$dedupKey]['score'];
+            $existingRound = isset($map[$dedupKey]['round']) ? (int)$map[$dedupKey]['round'] : 1;
             if ($score > $existingScore || ($score === $existingScore && $round > $existingRound)) {
-                $map[$name] = $item;
+                $map[$dedupKey] = $item;
             }
         }
     }
@@ -356,43 +358,113 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($pdo) {
         try {
             $encryptedWallet = encryptWallet($wallet, $encKey);
+            $walletHash = !empty($wallet) ? hash('sha256', strtolower(trim($wallet))) : '';
 
-            // Save to All-Time in DB (Insert or Update if higher)
-            $sqlAll = "INSERT INTO leaderboard_alltime (name, wallet, score, round, date) 
-                       VALUES (:name, :wallet, :score, :round, :date)
-                       ON DUPLICATE KEY UPDATE 
-                       wallet = VALUES(wallet),
-                       score = IF(VALUES(score) > score, VALUES(score), score),
-                       round = IF(VALUES(score) > score, VALUES(round), round),
-                       date = IF(VALUES(score) > score, VALUES(date), date)";
-            $stmtA = $pdo->prepare($sqlAll);
-            $stmtA->execute([
-                ':name'   => $name,
-                ':wallet' => $encryptedWallet,
-                ':score'  => $score,
-                ':round'  => $round,
-                ':date'   => $date
-            ]);
+            // 1. Save to All-Time in DB: Verificar primero si la billetera ya existe
+            if (!empty($walletHash)) {
+                $stmtFind = $pdo->prepare("SELECT id, score, name FROM leaderboard_alltime WHERE wallet_hash = ? LIMIT 1");
+                $stmtFind->execute([$walletHash]);
+                $existing = $stmtFind->fetch();
 
-            // Save to Weekly in DB (Insert or Update if higher for current epoch)
+                if ($existing) {
+                    // La billetera ya existe: si el nuevo score es mayor, se actualiza
+                    if ($score > (int)$existing['score']) {
+                        $up = $pdo->prepare("UPDATE leaderboard_alltime SET name = ?, wallet = ?, score = ?, round = ?, date = ? WHERE id = ?");
+                        $up->execute([$name, $encryptedWallet, $score, $round, $date, $existing['id']]);
+                    }
+                } else {
+                    // Billetera nueva: insertar registro
+                    $sqlAll = "INSERT INTO leaderboard_alltime (name, wallet, wallet_hash, score, round, date) 
+                               VALUES (:name, :wallet, :wallet_hash, :score, :round, :date)
+                               ON DUPLICATE KEY UPDATE 
+                               wallet = VALUES(wallet),
+                               wallet_hash = VALUES(wallet_hash),
+                               score = IF(VALUES(score) > score, VALUES(score), score),
+                               round = IF(VALUES(score) > score, VALUES(round), round),
+                               date = IF(VALUES(score) > score, VALUES(date), date)";
+                    $stmtA = $pdo->prepare($sqlAll);
+                    $stmtA->execute([
+                        ':name'        => $name,
+                        ':wallet'      => $encryptedWallet,
+                        ':wallet_hash' => $walletHash,
+                        ':score'       => $score,
+                        ':round'       => $round,
+                        ':date'        => $date
+                    ]);
+                }
+            }
+
+            // 2. Save to Weekly in DB: Verificar primero si la billetera ya existe en el epoch actual
             $currentEpoch = loadJson($weeklyEpochFile);
             $epochVal = is_numeric($currentEpoch) ? (int)$currentEpoch : 0;
-            $sqlWk = "INSERT INTO leaderboard_weekly (week_epoch, name, wallet, score, round, date)
-                      VALUES (:epoch, :name, :wallet, :score, :round, :date)
-                      ON DUPLICATE KEY UPDATE
-                      wallet = VALUES(wallet),
-                      score = IF(VALUES(score) > score, VALUES(score), score),
-                      round = IF(VALUES(score) > score, VALUES(round), round),
-                      date = IF(VALUES(score) > score, VALUES(date), date)";
-            $stmtW = $pdo->prepare($sqlWk);
-            $stmtW->execute([
-                ':epoch'  => $epochVal,
-                ':name'   => $name,
-                ':wallet' => $encryptedWallet,
-                ':score'  => $score,
-                ':round'  => $round,
-                ':date'   => $date
+
+            if (!empty($walletHash)) {
+                $stmtFindW = $pdo->prepare("SELECT id, score, name FROM leaderboard_weekly WHERE week_epoch = ? AND wallet_hash = ? LIMIT 1");
+                $stmtFindW->execute([$epochVal, $walletHash]);
+                $existingW = $stmtFindW->fetch();
+
+                if ($existingW) {
+                    // La billetera ya tiene récord esta semana: si el nuevo puntaje es superior, se actualiza
+                    if ($score > (int)$existingW['score']) {
+                        $upW = $pdo->prepare("UPDATE leaderboard_weekly SET name = ?, wallet = ?, score = ?, round = ?, date = ? WHERE id = ?");
+                        $upW->execute([$name, $encryptedWallet, $score, $round, $date, $existingW['id']]);
+                    }
+                } else {
+                    // Billetera nueva en la semana: insertar registro
+                    $sqlWk = "INSERT INTO leaderboard_weekly (week_epoch, name, wallet, wallet_hash, score, round, date)
+                              VALUES (:epoch, :name, :wallet, :wallet_hash, :score, :round, :date)
+                              ON DUPLICATE KEY UPDATE
+                              wallet = VALUES(wallet),
+                              wallet_hash = VALUES(wallet_hash),
+                              score = IF(VALUES(score) > score, VALUES(score), score),
+                              round = IF(VALUES(score) > score, VALUES(round), round),
+                              date = IF(VALUES(score) > score, VALUES(date), date)";
+                    $stmtW = $pdo->prepare($sqlWk);
+                    $stmtW->execute([
+                        ':epoch'       => $epochVal,
+                        ':name'        => $name,
+                        ':wallet'      => $encryptedWallet,
+                        ':wallet_hash' => $walletHash,
+                        ':score'       => $score,
+                        ':round'       => $round,
+                        ':date'        => $date
+                    ]);
+                }
+            }
+            // Si la base de datos está conectada, obtener la lista actualizada directamente de MySQL
+            $stmtAll = $pdo->query("SELECT name, wallet, score, round, date FROM leaderboard_alltime ORDER BY score DESC, round DESC LIMIT 50");
+            $rawAllTime = $stmtAll->fetchAll();
+            $allTime = array_map(function($row) use ($encKey) {
+                $decrypted = decryptWallet($row['wallet'], $encKey);
+                $row['wallet'] = maskWallet($decrypted);
+                $row['score'] = (int)$row['score'];
+                $row['round'] = (int)$row['round'];
+                return $row;
+            }, $rawAllTime);
+
+            $stmtWk = $pdo->prepare("SELECT name, wallet, score, round, date FROM leaderboard_weekly WHERE week_epoch >= ? ORDER BY score DESC, round DESC LIMIT 100");
+            $stmtWk->execute([$epochVal]);
+            $rawWeekly = $stmtWk->fetchAll();
+            $weekly = array_map(function($row) use ($encKey) {
+                $decrypted = decryptWallet($row['wallet'], $encKey);
+                $row['wallet'] = maskWallet($decrypted);
+                $row['score'] = (int)$row['score'];
+                $row['round'] = (int)$row['round'];
+                return $row;
+            }, $rawWeekly);
+
+            // Sincronizar respaldo local JSON con los datos reales
+            saveJson($allTimeFile, $allTime);
+            saveJson($weeklyFile, $weekly);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Record recorded successfully',
+                'source'  => 'database',
+                'allTime' => $allTime,
+                'weekly'  => $weekly
             ]);
+            exit;
         } catch (Exception $e) {
             // Log or ignore DB error and fallback to file storage
         }
@@ -412,7 +484,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     echo json_encode([
         'success' => true,
         'message' => 'Record recorded successfully',
-        'source'  => $pdo ? 'database' : 'local',
+        'source'  => 'local',
         'allTime' => $allTime,
         'weekly' => $weekly
     ]);

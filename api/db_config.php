@@ -14,20 +14,23 @@ if (!defined('ARC_SECURE_ACCESS')) {
 }
 
 return [
-    // Cambia a true una vez hayas puesto tus credenciales y creado las tablas en MySQL
-    'DB_ENABLED' => filter_var(getenv('DB_ENABLED') !== false ? getenv('DB_ENABLED') : false, FILTER_VALIDATE_BOOLEAN),
+    // DB habilitada - credenciales y tablas configuradas correctamente
+    'DB_ENABLED' => filter_var(getenv('DB_ENABLED') !== false ? getenv('DB_ENABLED') : true, FILTER_VALIDATE_BOOLEAN),
 
     // Datos de conexión protegidos (prioriza variables de entorno o valores seguros)
-    'DB_HOST'    => getenv('DB_HOST')    ?: 'localhost',
-    'DB_PORT'    => getenv('DB_PORT')    ?: '3306',
-    'DB_NAME'    => getenv('DB_NAME')    ?: 'u123456789_arc_database',
-    'DB_USER'    => getenv('DB_USER')    ?: 'u123456789_arc_user',
-    'DB_PASS'    => getenv('DB_PASS')    ?: 'TuPasswordSeguroAqui',
+    'DB_HOST'    => getenv('DB_HOST')    ?: '127.0.0.1',
+    'DB_PORT'    => getenv('DB_PORT')    ?: '3301',
+    'DB_NAME'    => getenv('DB_NAME')    ?: 'leaderboard_db',
+    'DB_USER'    => getenv('DB_USER')    ?: 'root',
+    'DB_PASS'    => getenv('DB_PASS')    ?: 'Cazadorx92*',
     'DB_CHARSET' => 'utf8mb4',
 
     // Clave criptográfica para cifrado de wallets en reposo (AES-256-CBC)
     'DB_ENCRYPTION_KEY' => getenv('DB_ENCRYPTION_KEY') ?: 'ARC_CYBER_ENCRYPTION_SECRET_KEY_2026_9973',
 
     // Forzar conexión cifrada TLS/SSL con MySQL
-    'DB_SSL_ENABLED' => true
+    'DB_SSL_ENABLED' => true,
+
+    // Clave maestra de acceso al panel administrativo de billeteras (admin_wallets.php)
+    'ADMIN_PASSWORD' => getenv('ADMIN_PASSWORD') ?: 'Cazadorx92*'
 ];

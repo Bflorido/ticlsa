@@ -15,12 +15,14 @@ CREATE TABLE IF NOT EXISTS `leaderboard_alltime` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(20) NOT NULL,
   `wallet` VARCHAR(255) NOT NULL DEFAULT '',
+  `wallet_hash` VARCHAR(64) NOT NULL DEFAULT '',
   `score` BIGINT NOT NULL DEFAULT 0,
   `round` INT NOT NULL DEFAULT 1,
   `date` VARCHAR(30) NOT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY `idx_pilot_name` (`name`),
+  UNIQUE KEY `uk_alltime_wallet` (`wallet_hash`),
   KEY `idx_score_alltime` (`score` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -29,12 +31,14 @@ CREATE TABLE IF NOT EXISTS `leaderboard_weekly` (
   `week_epoch` BIGINT NOT NULL DEFAULT 0,
   `name` VARCHAR(20) NOT NULL,
   `wallet` VARCHAR(255) NOT NULL DEFAULT '',
+  `wallet_hash` VARCHAR(64) NOT NULL DEFAULT '',
   `score` BIGINT NOT NULL DEFAULT 0,
   `round` INT NOT NULL DEFAULT 1,
   `date` VARCHAR(30) NOT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY `idx_weekly_pilot` (`week_epoch`, `name`),
+  UNIQUE KEY `uk_weekly_wallet` (`week_epoch`, `wallet_hash`),
   KEY `idx_score_weekly` (`score` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
